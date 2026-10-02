@@ -1,0 +1,52 @@
+---
+import { TERMINAL } from "@/consts"
+import { normalizePath } from "@/lib/utils"
+
+// Every page pretends to be the output of a shell command.
+const path = normalizePath(Astro.url.pathname) || "/"
+const [section, ...rest] = path.split("/").filter(Boolean)
+const tail = rest.join("/")
+
+const commands: Record<string, () => [string, string]> = {
+  blog: () => (tail ? ["~/blog", `less ${tail}.md`] : ["~/blog", "ls -lt"]),
+  tags: () => (tail ? ["~/blog", `grep -rl "#${tail}" .`] : ["~/tags", "ls"]),
+  projects: () => ["~/projects", "git log --oneline"],
+  authors: () => (tail ? ["~", `finger ${tail}`] : ["~", "who"]),
+  "404": () => ["~", "cd ???"],
+}
+const [cwd, command] = commands[section]?.() ?? ["~", `cat ${path}`]
+---
+
+<page-command>
+  <a href="/" title="back to the terminal"
+    >{TERMINAL.user}@{TERMINAL.host}</a
+  >:<span>{cwd}</span>$ <code>{command}</code>
+</page-command>
+
+<style>
+  page-command {
+    display: block;
+    margin-block-end: var(--space-s);
+    font-family: var(--font-mono);
+    font-size: var(--step--1);
+    color: var(--muted-foreground);
+    overflow-wrap: anywhere;
+
+    a {
+      color: var(--t-green);
+      text-decoration-line: none;
+
+      &:hover {
+        text-decoration-line: underline;
+      }
+    }
+
+    span {
+      color: var(--t-blue);
+    }
+
+    code {
+      color: var(--foreground);
+    }
+  }
+</style>

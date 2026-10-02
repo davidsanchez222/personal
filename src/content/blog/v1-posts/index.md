@@ -4,7 +4,7 @@ description: "An archive of every blog post that shipped with astro-erudite v1."
 date: 2025-05-21
 image: ./assets/banner.png
 authors:
-  - enscribe
+  - david
 ---
 
 :::caution[Out of date]

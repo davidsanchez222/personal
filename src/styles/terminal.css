@@ -1,0 +1,224 @@
+/* Terminal accents and `theme <name>` color schemes, shared by every page. */
+:root {
+  --t-red:     light-dark(#cf222e, #f87171);
+  --t-green:   light-dark(#1a7f37, #4ade80);
+  --t-yellow:  light-dark(#9a6700, #facc15);
+  --t-blue:    light-dark(#0969da, #60a5fa);
+  --t-magenta: light-dark(#8250df, #c084fc);
+  --t-cyan:    light-dark(#1b7c83, #22d3ee);
+  --t-accent:  var(--t-green);
+  --t-glow:    none;
+}
+
+:root[data-term-theme] {
+  --primary: var(--foreground);
+  --primary-foreground: var(--background);
+  --ring: var(--muted-foreground);
+}
+
+:root[data-term-theme="dracula"] {
+  color-scheme: dark;
+  --background: #282a36;
+  --foreground: #f8f8f2;
+  --muted: #343746;
+  --muted-foreground: #a4a9c4;
+  --border: #44475a;
+  --t-red: #ff5555;
+  --t-green: #50fa7b;
+  --t-yellow: #f1fa8c;
+  --t-blue: #bd93f9;
+  --t-magenta: #ff79c6;
+  --t-cyan: #8be9fd;
+}
+
+:root[data-term-theme="gruvbox"] {
+  color-scheme: dark;
+  --background: #282828;
+  --foreground: #ebdbb2;
+  --muted: #3c3836;
+  --muted-foreground: #a89984;
+  --border: #504945;
+  --t-red: #fb4934;
+  --t-green: #b8bb26;
+  --t-yellow: #fabd2f;
+  --t-blue: #83a598;
+  --t-magenta: #d3869b;
+  --t-cyan: #8ec07c;
+}
+
+:root[data-term-theme="nord"] {
+  color-scheme: dark;
+  --background: #2e3440;
+  --foreground: #eceff4;
+  --muted: #3b4252;
+  --muted-foreground: #a3adc2;
+  --border: #4c566a;
+  --t-red: #bf616a;
+  --t-green: #a3be8c;
+  --t-yellow: #ebcb8b;
+  --t-blue: #81a1c1;
+  --t-magenta: #b48ead;
+  --t-cyan: #88c0d0;
+}
+
+:root[data-term-theme="catppuccin"] {
+  color-scheme: dark;
+  --background: #1e1e2e;
+  --foreground: #cdd6f4;
+  --muted: #313244;
+  --muted-foreground: #a6adc8;
+  --border: #45475a;
+  --t-red: #f38ba8;
+  --t-green: #a6e3a1;
+  --t-yellow: #f9e2af;
+  --t-blue: #89b4fa;
+  --t-magenta: #cba6f7;
+  --t-cyan: #94e2d5;
+}
+
+:root[data-term-theme="solarized"] {
+  color-scheme: light;
+  --background: #fdf6e3;
+  --foreground: #073642;
+  --muted: #eee8d5;
+  --muted-foreground: #657b83;
+  --border: #d9d2bd;
+  --t-red: #dc322f;
+  --t-green: #859900;
+  --t-yellow: #b58900;
+  --t-blue: #268bd2;
+  --t-magenta: #d33682;
+  --t-cyan: #2aa198;
+}
+
+:root[data-term-theme="phosphor"] {
+  color-scheme: dark;
+  --background: #050a05;
+  --foreground: #4dff7c;
+  --muted: #0c1a0e;
+  --muted-foreground: #2fae52;
+  --border: #1a3d20;
+  --t-red: #b6ff5c;
+  --t-green: #4dff7c;
+  --t-yellow: #a8ff8a;
+  --t-blue: #3cf0a0;
+  --t-magenta: #8cffb0;
+  --t-cyan: #2bffc0;
+  --t-glow: 0 0 6px color-mix(in oklab, #4dff7c 55%, transparent);
+}
+
+:root[data-term-theme="amber"] {
+  color-scheme: dark;
+  --background: #0d0800;
+  --foreground: #ffb000;
+  --muted: #1d1300;
+  --muted-foreground: #b88000;
+  --border: #3d2900;
+  --t-red: #ff7a1a;
+  --t-green: #ffc640;
+  --t-yellow: #ffd27a;
+  --t-blue: #ff9d2e;
+  --t-magenta: #ffcf99;
+  --t-cyan: #ffbb4d;
+  --t-glow: 0 0 6px color-mix(in oklab, #ffb000 50%, transparent);
+}
+
+body {
+  text-shadow: var(--t-glow);
+}
+
+::selection {
+  background-color: color-mix(in oklab, var(--t-accent) 30%, transparent);
+}
+
+/* Effects toggled from the terminal (`konami`, `rm -rf /`, page hand-off). */
+.t-party body {
+  animation: t-hue 1.2s linear infinite;
+}
+
+.t-glitch body {
+  animation: t-glitch 0.12s steps(2) infinite;
+}
+
+.t-leaving body {
+  opacity: 0.55;
+  transition: opacity 0.3s;
+}
+
+@keyframes t-hue {
+  to {
+    filter: hue-rotate(360deg);
+  }
+}
+
+@keyframes t-glitch {
+  0% {
+    transform: translate(0);
+  }
+  50% {
+    transform: translate(-4px, 2px) skewX(3deg);
+    filter: hue-rotate(90deg) saturate(3);
+  }
+  100% {
+    transform: translate(3px, -2px);
+    filter: invert(1);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .t-party body,
+  .t-glitch body {
+    animation: none;
+  }
+}
+
+/* Blog re-skin: markdown-flavored headings and a blinking cursor on titles. */
+main h1,
+prose-content :is(h2, h3, h4) {
+  font-family: var(--font-mono);
+  letter-spacing: -0.02em;
+}
+
+prose-content {
+  h2::before,
+  h3::before,
+  h4::before {
+    color: var(--muted-foreground);
+    opacity: 0.55;
+  }
+
+  h2::before {
+    content: "## ";
+  }
+
+  h3::before {
+    content: "### ";
+  }
+
+  h4::before {
+    content: "#### ";
+  }
+}
+
+main h1:first-of-type::after {
+  content: "";
+  display: inline-block;
+  inline-size: 0.55em;
+  block-size: 0.9em;
+  margin-inline-start: 0.2em;
+  vertical-align: -0.08em;
+  background-color: var(--t-accent);
+  animation: t-cursor 1.1s steps(1) infinite;
+}
+
+@keyframes t-cursor {
+  50% {
+    opacity: 0;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  main h1:first-of-type::after {
+    animation: none;
+  }
+}

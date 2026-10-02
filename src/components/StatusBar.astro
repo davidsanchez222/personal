@@ -1,0 +1,207 @@
+---
+import { normalizePath } from "@/lib/utils"
+
+const path = normalizePath(Astro.url.pathname) || "/"
+const isPost = /^\/blog\/.+/.test(path)
+const file = isPost ? `~${path}.md` : `~${path}/`
+---
+
+<status-bar role="status">
+  <bar-mode>NORMAL</bar-mode>
+  <bar-file>{file}{isPost && <span> [readonly]</span>}</bar-file>
+  <bar-message></bar-message>
+  <bar-hint
+    ><kbd>j</kbd>/<kbd>k</kbd>
+    scroll · <kbd>gg</kbd>/<kbd>G</kbd>
+    · <kbd>q</kbd> terminal</bar-hint
+  >
+  <bar-pos>Top</bar-pos>
+</status-bar>
+
+<style>
+  status-bar {
+    position: fixed;
+    inset-inline: 0;
+    inset-block-end: 0;
+    z-index: 20;
+    display: flex;
+    align-items: center;
+    gap: 1ch;
+    block-size: 1.75rem;
+    padding-inline-end: 1ch;
+    font-family: var(--font-mono);
+    font-size: 0.78rem;
+    white-space: nowrap;
+    color: var(--muted-foreground);
+    background-color: var(--muted);
+    border-block-start: 1px solid var(--border);
+  }
+
+  bar-mode {
+    align-self: stretch;
+    display: grid;
+    place-items: center;
+    padding-inline: 1.25ch;
+    font-weight: var(--font-weight-medium);
+    color: var(--background);
+    background-color: var(--t-green);
+  }
+
+  status-bar[data-mode="COMMAND"] bar-mode {
+    background-color: var(--t-yellow);
+  }
+
+  bar-file {
+    color: var(--foreground);
+    overflow: hidden;
+    text-overflow: ellipsis;
+
+    span {
+      color: var(--muted-foreground);
+    }
+  }
+
+  bar-message {
+    flex: 1;
+    overflow: hidden;
+    text-overflow: ellipsis;
+
+    &[data-error] {
+      color: var(--t-red);
+    }
+  }
+
+  bar-hint {
+    @media (width < 48rem), (hover: none) {
+      display: none;
+    }
+
+    kbd {
+      font-family: inherit;
+      color: var(--foreground);
+    }
+  }
+
+  bar-pos {
+    min-inline-size: 4ch;
+    text-align: end;
+  }
+
+  :global(html:has(status-bar)) {
+    --page-offset-bottom: calc(var(--space-m) + 1.75rem);
+    scroll-padding-block-end: 2rem;
+  }
+
+  :global(body:has(status-bar)) {
+    padding-block-end: 1.75rem;
+  }
+</style>
+
+<script>
+  import { storage } from "@/scripts/terminal/html"
+
+  const bar = document.querySelector("status-bar")
+  const mode = bar?.querySelector("bar-mode")
+  const message = bar?.querySelector<HTMLElement>("bar-message")
+  const pos = bar?.querySelector("bar-pos")
+
+  const updatePos = () => {
+    if (!pos) return
+    const max = document.documentElement.scrollHeight - innerHeight
+    const y = scrollY
+    pos.textContent =
+      max <= 0
+        ? "All"
+        : y <= 0
+          ? "Top"
+          : y >= max - 2
+            ? "Bot"
+            : `${Math.round((y / max) * 100)}%`
+  }
+  addEventListener("scroll", updatePos, { passive: true })
+  addEventListener("resize", updatePos)
+  updatePos()
+
+  const say = (text: string, error = false) => {
+    if (!message) return
+    message.textContent = text
+    message.toggleAttribute("data-error", error)
+  }
+
+  if (storage.get(sessionStorage, "dsh.vim")) {
+    storage.set(sessionStorage, "dsh.vim", null)
+    say("you opened this in vim. good luck getting out (hint: :q)")
+  }
+
+  const quit = () => {
+    document.documentElement.classList.add("t-leaving")
+    location.href = "/"
+  }
+
+  let command: string | null = null
+  let pending = ""
+  const setCommand = (value: string | null) => {
+    command = value
+    if (bar) bar.dataset.mode = value === null ? "NORMAL" : "COMMAND"
+    if (mode) mode.textContent = value === null ? "NORMAL" : "COMMAND"
+    if (value !== null) say(`:${value}`)
+  }
+
+  const run = (input: string) => {
+    setCommand(null)
+    if (/^(q|q!|qa!?|wq!?|x|quit)$/.test(input)) return quit()
+    if (/^\d+$/.test(input)) {
+      const max = document.documentElement.scrollHeight - innerHeight
+      scrollTo({ top: (Math.min(100, Number(input)) / 100) * max })
+      return say("")
+    }
+    if (input === "w")
+      return say("E45: 'readonly' option is set (add ! to override)", true)
+    if (input === "help")
+      return say(
+        "j/k scroll · d/u half page · gg/G top/bottom · :NN jump to NN% · :q terminal",
+      )
+    say(`E492: Not an editor command: ${input}`, true)
+  }
+
+  addEventListener("keydown", (event) => {
+    const target = event.target as HTMLElement
+    if (
+      event.metaKey ||
+      event.ctrlKey ||
+      event.altKey ||
+      target.closest("input, textarea, select, [contenteditable]")
+    )
+      return
+
+    if (command !== null) {
+      event.preventDefault()
+      if (event.key === "Escape") {
+        setCommand(null)
+        say("")
+      } else if (event.key === "Enter") run(command)
+      else if (event.key === "Backspace")
+        command ? setCommand(command.slice(0, -1)) : (setCommand(null), say(""))
+      else if (event.key.length === 1) setCommand(command + event.key)
+      return
+    }
+
+    const line = parseFloat(getComputedStyle(document.body).lineHeight) || 24
+    const keys: Record<string, () => void> = {
+      j: () => scrollBy({ top: line * 3 }),
+      k: () => scrollBy({ top: -line * 3 }),
+      d: () => scrollBy({ top: innerHeight / 2, behavior: "smooth" }),
+      u: () => scrollBy({ top: -innerHeight / 2, behavior: "smooth" }),
+      G: () => scrollTo({ top: document.documentElement.scrollHeight }),
+      q: quit,
+      ":": () => setCommand(""),
+    }
+    if (event.key === "g") {
+      if (pending === "g") scrollTo({ top: 0 })
+      pending = pending === "g" ? "" : "g"
+      return
+    }
+    pending = ""
+    keys[event.key]?.()
+  })
+</script>

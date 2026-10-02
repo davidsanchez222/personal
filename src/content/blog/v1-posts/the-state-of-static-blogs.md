@@ -6,7 +6,7 @@ order: 1
 tags:
   - v1.0.0
 image: "./assets/the-state-of-static-blogs.png"
-authors: ['enscribe']
+authors: ['david']
 ---
 
 ## Introduction

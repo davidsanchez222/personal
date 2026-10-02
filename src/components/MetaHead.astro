@@ -60,6 +60,10 @@ import { SITE } from "@/consts"
     const theme = localStorage.theme
     if (theme === "light" || theme === "dark")
       document.documentElement.dataset.theme = theme
+    try {
+      const termTheme = localStorage.termTheme
+      if (termTheme) document.documentElement.dataset.termTheme = termTheme
+    } catch {}
   </script>
 
   <slot />

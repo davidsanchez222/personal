@@ -14,10 +14,13 @@ import "@/styles/layout.css"
 import "@/styles/icon-button.css"
 import "@/styles/bar.css"
 import "@/styles/shape.css"
+import "@/styles/terminal.css"
 
 import Footer from "@/components/Footer.astro"
 import MetaHead from "@/components/MetaHead.astro"
+import PageCommand from "@/components/PageCommand.astro"
 import Sidebar from "@/components/Sidebar.astro"
+import StatusBar from "@/components/StatusBar.astro"
 import { SITE } from "@/consts"
 
 type Props = { crumbs?: { label: string; href: string }[] }
@@ -42,10 +45,12 @@ const { crumbs } = Astro.props
           )}
       </page-header>
       <page-content>
+        <PageCommand />
         <main><slot /></main>
         <page-footer><Footer /></page-footer>
       </page-content>
     </page-grid>
+    <StatusBar />
   </body>
 </html>
 

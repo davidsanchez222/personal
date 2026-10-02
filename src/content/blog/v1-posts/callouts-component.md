@@ -7,7 +7,7 @@ tags:
   - v1.5.0
 image: "./assets/callouts-component.png"
 authors:
-  - enscribe
+  - david
 ---
 
 ## Our (hesitantly) first content-based component

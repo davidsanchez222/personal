@@ -1,5 +1,4 @@
 ---
-import Logo from "@/assets/logo.svg"
 import ThemeToggle from "@/components/ThemeToggle.astro"
 import { NAVIGATION, SITE } from "@/consts"
 import { normalizePath } from "@/lib/utils"
@@ -15,8 +14,8 @@ const section = NAVIGATION.find(
 
 <aside data-bar>
   <sidebar-inner>
-    <a href="/" aria-label={SITE.title}>
-      <Logo />
+    <a href="/" aria-label={`${SITE.title}: back to the terminal`}>
+      <prompt-glyph aria-hidden="true">&gt;_</prompt-glyph>
       <span>{SITE.title}</span>
     </a>
     <nav>
@@ -100,10 +99,22 @@ const section = NAVIGATION.find(
       color: var(--foreground);
       text-decoration-line: none;
 
-      svg {
-        inline-size: 1.125rem;
-        block-size: 1.125rem;
+      prompt-glyph {
+        display: inline-grid;
+        place-items: center;
+        inline-size: 1.375rem;
+        block-size: 1.375rem;
         flex-shrink: 0;
+        font-family: var(--font-mono);
+        font-size: 0.7rem;
+        font-weight: var(--font-weight-medium);
+        color: var(--t-green);
+        background-color: var(--foreground);
+        border-radius: var(--radius-sm, 4px);
+      }
+
+      &:hover prompt-glyph {
+        animation: glyph-blink 0.9s steps(1) infinite;
       }
 
       @media (width < 26rem) {
@@ -121,6 +132,17 @@ const section = NAVIGATION.find(
     }
   }
 
+  @keyframes glyph-blink {
+    50% {
+      color: transparent;
+    }
+  }
+
+  nav {
+    font-family: var(--font-mono);
+    font-size: var(--step--1);
+  }
+
   nav ul {
     display: flex;
     flex-direction: column;
@@ -133,6 +155,11 @@ const section = NAVIGATION.find(
       &:hover,
       &[aria-current="page"] {
         color: var(--foreground);
+      }
+
+      &[aria-current="page"]::before {
+        content: "> ";
+        color: var(--t-green);
       }
     }
 

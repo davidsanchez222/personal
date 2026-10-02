@@ -7,6 +7,34 @@ import Layout from "@/layouts/Layout.astro"
   <MetaPage slot="head" title="404" />
   <prose-content>
     <h1>404</h1>
-    <p>This page does not exist.</p>
+    <shell-error>
+      <p>
+        <span>dsh:</span>
+        no such file or directory:
+        <code id="missing-path">this page</code>
+      </p>
+      <p>
+        Try <a href="/">cd ~</a> to get back to the terminal, or
+        <a href="/blog">ls ~/blog</a>
+        to browse posts.
+      </p>
+    </shell-error>
   </prose-content>
 </Layout>
+
+<style>
+  shell-error {
+    display: block;
+    font-family: var(--font-mono);
+    font-size: var(--step--1);
+
+    span {
+      color: var(--t-red);
+    }
+  }
+</style>
+
+<script>
+  const missing = document.getElementById("missing-path")
+  if (missing) missing.textContent = `~${location.pathname}`
+</script>

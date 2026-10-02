@@ -54,6 +54,9 @@ import SunIcon from "@/assets/icons/sun.svg"
     const theme = dark ? "light" : "dark"
     root.dataset.theme = theme
     localStorage.theme = theme
+    // A terminal `theme` overrides light/dark; toggling hands control back.
+    delete root.dataset.termTheme
+    localStorage.removeItem("termTheme")
   }
 
   const button = document.getElementById("theme-toggle")
