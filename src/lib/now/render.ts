@@ -169,13 +169,21 @@ export function bookList(books: Book[]) {
 
 // ------------------------------------------------------------------- food
 
+export const RATING_MAX = 10
+
+/** "★★★★★★★☆☆☆", clamped so an out-of-range rating can't break rendering. */
+export const starText = (rating = 0) => {
+  const filled = Math.min(RATING_MAX, Math.max(0, Math.round(rating)))
+  return "★".repeat(filled) + "☆".repeat(RATING_MAX - filled)
+}
+
 const stars = (rating = 0) =>
-  `<span class="t-stars" aria-label="${rating} out of 5">${"★".repeat(rating)}${"☆".repeat(5 - rating)}</span>`
+  `<span class="t-stars" aria-label="${rating} out of ${RATING_MAX}">${starText(rating)}</span>`
 
 export function receipt(meal: Meal, order: number, relative = false) {
   const date = new Date(meal.date)
   const again =
-    (meal.rating ?? 0) >= 4 ? "yes" : (meal.rating ?? 0) === 3 ? "maybe" : "no"
+    (meal.rating ?? 0) >= 7 ? "yes" : (meal.rating ?? 0) >= 4 ? "maybe" : "no"
   const place = meal.city ? `${meal.place}, ${meal.city}` : meal.place
   return [
     "<t-receipt>",

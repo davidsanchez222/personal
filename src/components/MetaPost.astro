@@ -9,16 +9,14 @@ type Props = {
 }
 
 const { post, canonical: canonicalPath } = Astro.props
-const { title, description, date, image } = post.data
+const { title, description, date } = post.data
 
 const base = Astro.site ?? new URL(Astro.url.origin)
 const authors = await getEntries(post.data.authors)
 const authorNames = authors.map((author) => author.data.name)
 const url = new URL(Astro.url.pathname, base)
 const canonical = new URL(canonicalPath ?? Astro.url.pathname, base)
-const ogImage = image
-  ? new URL(image.src, base)
-  : new URL(SITE.defaultPostImage, base)
+const ogImage = new URL(`/og/blog/${post.id}.png`, base)
 ---
 
 <title>{pageTitle(title)}</title>
@@ -32,6 +30,8 @@ const ogImage = image
 <meta property="og:site_name" content={SITE.title}>
 <meta property="og:locale" content={SITE.locale.replace("-", "_")}>
 <meta property="og:image" content={ogImage}>
+<meta property="og:image:width" content="1200">
+<meta property="og:image:height" content="630">
 <meta property="og:image:alt" content={title}>
 
 <meta name="twitter:card" content="summary_large_image">

@@ -1,6 +1,8 @@
 import { getListening, startTicker } from "@/lib/now/live"
 import {
   ago,
+  RATING_MAX,
+  starText,
   bookList,
   dashboard,
   player,
@@ -1448,12 +1450,10 @@ export function createCommands(): Command[] {
             `${prefix} Started digesting ${c("bold", `"${meal.dish}"`)} from ${esc(meal.place)}.`,
           )
           if (meal.rating)
-            term.print(
-              `${prefix} rating=${c("yellow", "★".repeat(meal.rating) + "☆".repeat(5 - meal.rating))}`,
-            )
+            term.print(`${prefix} rating=${c("yellow", starText(meal.rating))}`)
           if (meal.note)
             term.print(`${prefix} ${c("muted", `note: ${meal.note}`)}`)
-          if ((meal.rating ?? 5) <= 2)
+          if ((meal.rating ?? RATING_MAX) <= 3)
             term.print(
               `${prefix} ${c("red", "stomach.service: Main process exited, code=exited, status=1/FAILURE")}`,
             )
@@ -1541,7 +1541,7 @@ export function createCommands(): Command[] {
           `Type ${cmd("help")} to get started, or try ${cmd("whoami")}, ${cmd("now")}, ${cmd("ls")} or ${cmd(`man ${term.data.prompt.user}`)}.`,
         )
         term.print(
-          c("muted", "Prefer a normal website? ") + link("/blog", "gui mode →"),
+          c("muted", "Prefer a normal website? ") + link("/blog", "gui mode (blog) →"),
         )
         term.print()
       },

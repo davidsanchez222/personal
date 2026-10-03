@@ -1,6 +1,7 @@
 ---
 import { SITE } from "@/consts"
 import { pageTitle } from "@/lib/content"
+import { getOgCards, ogSlug } from "@/lib/og"
 
 type Props = {
   title?: string
@@ -14,7 +15,9 @@ const base = Astro.site ?? new URL(Astro.url.origin)
 const ogTitle = title ?? SITE.title
 const fullTitle = title ? pageTitle(title) : SITE.title
 const canonical = new URL(Astro.url.pathname, base)
-const ogImage = new URL(SITE.defaultPageImage, base)
+const slug = ogSlug(Astro.url.pathname)
+const hasCard = (await getOgCards()).some((card) => card.slug === slug)
+const ogImage = new URL(`/og/${hasCard ? slug : "index"}.png`, base)
 ---
 
 <title>{fullTitle}</title>
@@ -29,6 +32,8 @@ const ogImage = new URL(SITE.defaultPageImage, base)
 <meta property="og:site_name" content={SITE.title}>
 <meta property="og:locale" content={SITE.locale.replace("-", "_")}>
 <meta property="og:image" content={ogImage}>
+<meta property="og:image:width" content="1200">
+<meta property="og:image:height" content="630">
 <meta property="og:image:alt" content={ogTitle}>
 
 <meta name="twitter:card" content="summary_large_image">

@@ -30,7 +30,7 @@ export type Meal = {
   city?: string;
   /** ISO date, optionally with a time: "2026-10-01T19:42". */
   date: string;
-  /** 1–5 stars. */
+  /** 1–10 stars. */
   rating?: number;
   note?: string;
   url?: string;
@@ -53,20 +53,20 @@ export const NOW: Now = {
   updated: "2026-10-02",
   listening: {
     current: {
-      title: "Weird Fishes/Arpeggi",
-      artist: "Radiohead",
-      album: "In Rainbows",
-      duration: "5:18",
+      title: "Borderline - Radio Edit",
+      artist: "Michael Gray",
+      album: "Analog Is On",
+      duration: "3:15",
     },
     recent: [
+      { title: "Brain Fog", artist: "slayr", album: "Half Blood (BloodLuxe)" },
+      { title: "Magic I Want U", artist: "Jane Remover", album: "Heart" },
+      { title: "Trailblaze", artist: "Cowgirl Clue", album: "Rodeo Star" },
       {
-        title: "Midnight City",
-        artist: "M83",
-        album: "Hurry Up, We're Dreaming",
+        title: "Root of all Evil",
+        artist: "Daniel Caesar",
+        album: "Son Of Spergy",
       },
-      { title: "Let It Happen", artist: "Tame Impala", album: "Currents" },
-      { title: "Nights", artist: "Frank Ocean", album: "Blonde" },
-      { title: "Teardrop", artist: "Massive Attack", album: "Mezzanine" },
     ],
   },
   reading: [
@@ -74,16 +74,9 @@ export const NOW: Now = {
       title: "Inference Engineering",
       author: "",
       status: "reading",
-      progress: 62,
-      pages: 352,
+      progress: 50,
+      pages: 208,
       note: "currently on the chapter about tracer bullets",
-    },
-    {
-      title: "The Linux Command Line",
-      author: "William Shotts",
-      status: "finished",
-      pages: 504,
-      note: "the reason this website exists",
     },
     {
       title: "Designing Data-Intensive Applications",
@@ -94,25 +87,18 @@ export const NOW: Now = {
   ],
   ate: [
     {
-      dish: "tacos al pastor",
-      place: "the taco truck on 5th",
-      date: "2026-10-01T19:42",
-      rating: 5,
-      note: "pineapple on top, as nature intended",
+      dish: "chicken waffle sandwhich",
+      place: "chick fil a",
+      date: "2026-10-02T19:42",
+      rating: 10,
+      note: "ts was heavenly",
     },
     {
-      dish: "tonkotsu ramen",
-      place: "a tiny ramen counter",
-      date: "2026-09-28T12:15",
-      rating: 4,
-      note: "broth: 10/10. wait: 45 minutes.",
-    },
-    {
-      dish: "breakfast burrito",
-      place: "my kitchen",
-      date: "2026-09-27T09:03",
-      rating: 3,
-      note: "self-made. compiles, but with warnings.",
+      dish: "mac and cheese meal prep",
+      place: "me",
+      date: "2026-10-02T12:15",
+      rating: 10,
+      note: "60g of protein cracked",
     },
   ],
 };
