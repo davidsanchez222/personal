@@ -118,6 +118,16 @@ export function columns(term: Terminal): number {
   return Math.max(20, Math.floor(inner / ch))
 }
 
+/** Resolves a CSS color variable (which may use light-dark()) to rgb(). */
+function cssColor(name: string, fallback: string) {
+  const probe = document.createElement("span")
+  probe.style.color = `var(${name}, ${fallback})`
+  document.body.append(probe)
+  const color = getComputedStyle(probe).color
+  probe.remove()
+  return color || fallback
+}
+
 export async function cmatrix(term: Terminal, signal: AbortSignal) {
   const host = term.el.body.parentElement ?? term.el.body
   const canvas = document.createElement("canvas")
@@ -135,10 +145,7 @@ export async function cmatrix(term: Terminal, signal: AbortSignal) {
     { length: Math.ceil(canvas.width / size) },
     () => Math.random() * -50,
   )
-  const green =
-    getComputedStyle(document.documentElement)
-      .getPropertyValue("--t-green")
-      .trim() || "#4ade80"
+  const green = cssColor("--t-green", "#a6d189")
   term.onKey = () => term.interrupt(true)
   const timer = setInterval(
     () => {
@@ -212,3 +219,75 @@ export const FORTUNES = [
   "Walking on water and developing software from a specification are easy if both are frozen.\n    — Edward V. Berard",
   "A good programmer is someone who always looks both ways before crossing a one-way street.",
 ]
+
+/** A full-window spectrum visualizer, in the spirit of cava(1). */
+export async function cava(term: Terminal, signal: AbortSignal, title: string) {
+  const host = term.el.body.parentElement ?? term.el.body
+  const canvas = document.createElement("canvas")
+  canvas.className = "t-overlay t-cava"
+  host.append(canvas)
+  const ctx = canvas.getContext("2d")
+  const ratio = devicePixelRatio || 1
+  canvas.width = host.clientWidth * ratio
+  canvas.height = host.clientHeight * ratio
+  const color = cssColor
+  const background = color("--t-crust", "#232634")
+  const stops = [
+    color("--t-magenta", "#ca9ee6"),
+    color("--t-pink", "#f4b8e4"),
+    color("--t-peach", "#ef9f76"),
+  ]
+
+  const bars = 48
+  const levels = new Array<number>(bars).fill(0)
+  const peaks = new Array<number>(bars).fill(0)
+  let frame = 0
+  term.onKey = () => term.interrupt(true)
+
+  const draw = () => {
+    if (!ctx || signal.aborted) return
+    frame++
+    const { width, height } = canvas
+    ctx.fillStyle = background
+    ctx.fillRect(0, 0, width, height)
+    const gradient = ctx.createLinearGradient(0, height, 0, height * 0.2)
+    stops.forEach((stop, i) =>
+      gradient.addColorStop(i / (stops.length - 1), stop),
+    )
+    const gap = 4 * ratio
+    const barWidth = (width - gap * (bars + 1)) / bars
+    for (let i = 0; i < bars; i++) {
+      // Bass-heavy fake spectrum: low bins move slower and reach higher.
+      const bass = 1 - i / bars
+      const beat = Math.max(0, Math.sin(frame / 9)) ** 6 * bass
+      const target =
+        (0.18 +
+          0.45 * bass * Math.abs(Math.sin(frame / (14 + i) + i)) +
+          0.3 * Math.random() * (0.4 + bass) +
+          0.35 * beat) *
+        0.85
+      levels[i] += (target - levels[i]) * 0.25
+      peaks[i] = Math.max(levels[i], peaks[i] - 0.006)
+      const x = gap + i * (barWidth + gap)
+      const h = levels[i] * height * 0.8
+      ctx.fillStyle = gradient
+      ctx.fillRect(x, height - h, barWidth, h)
+      ctx.fillStyle = stops[1]
+      ctx.fillRect(
+        x,
+        height - peaks[i] * height * 0.8 - 3 * ratio,
+        barWidth,
+        2 * ratio,
+      )
+    }
+    ctx.fillStyle = stops[0]
+    ctx.font = `${14 * ratio}px monospace`
+    ctx.fillText(title, 16 * ratio, 28 * ratio)
+    if (!reducedMotion() || frame % 4 === 0) requestAnimationFrame(draw)
+    else setTimeout(() => requestAnimationFrame(draw), 120)
+  }
+  requestAnimationFrame(draw)
+  await untilAborted(signal)
+  canvas.remove()
+  term.print(c("muted", "♪ the music never stops, only the visualizer does."))
+}

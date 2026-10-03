@@ -1,13 +1,21 @@
-/* Terminal accents and `theme <name>` color schemes, shared by every page. */
+/* Terminal accents (Catppuccin Latte / Frappé) and `theme <name>` schemes,
+   shared by every page. */
 :root {
-  --t-red:     light-dark(#cf222e, #f87171);
-  --t-green:   light-dark(#1a7f37, #4ade80);
-  --t-yellow:  light-dark(#9a6700, #facc15);
-  --t-blue:    light-dark(#0969da, #60a5fa);
-  --t-magenta: light-dark(#8250df, #c084fc);
-  --t-cyan:    light-dark(#1b7c83, #22d3ee);
-  --t-accent:  var(--t-green);
-  --t-glow:    none;
+  --t-red:      light-dark(#d20f39, #e78284);
+  --t-green:    light-dark(#40a02b, #a6d189);
+  --t-yellow:   light-dark(#df8e1d, #e5c890);
+  --t-blue:     light-dark(#1e66f5, #8caaee);
+  --t-magenta:  light-dark(#8839ef, #ca9ee6); /* mauve */
+  --t-cyan:     light-dark(#179299, #81c8be); /* teal */
+  --t-peach:    light-dark(#fe640b, #ef9f76);
+  --t-pink:     light-dark(#ea76cb, #f4b8e4);
+  --t-lavender: light-dark(#7287fd, #babbf1);
+  --t-sky:      light-dark(#04a5e5, #99d1db);
+  --t-rosewater: light-dark(#dc8a78, #f2d5cf);
+  --t-crust:    light-dark(#dce0e8, #232634);
+  --t-mantle:   light-dark(#e6e9ef, #292c3c);
+  --t-accent:   var(--t-magenta);
+  --t-glow:     none;
 }
 
 :root[data-term-theme] {
@@ -61,7 +69,24 @@
   --t-cyan: #88c0d0;
 }
 
-:root[data-term-theme="catppuccin"] {
+:root[data-term-theme="macchiato"] {
+  color-scheme: dark;
+  --background: #24273a;
+  --foreground: #cad3f5;
+  --muted: #363a4f;
+  --muted-foreground: #a5adcb;
+  --border: #494d64;
+  --t-red: #ed8796;
+  --t-green: #a6da95;
+  --t-yellow: #eed49f;
+  --t-blue: #8aadf4;
+  --t-magenta: #c6a0f6;
+  --t-cyan: #8bd5ca;
+  --t-crust: #181926;
+  --t-mantle: #1e2030;
+}
+
+:root[data-term-theme="mocha"] {
   color-scheme: dark;
   --background: #1e1e2e;
   --foreground: #cdd6f4;
@@ -74,6 +99,8 @@
   --t-blue: #89b4fa;
   --t-magenta: #cba6f7;
   --t-cyan: #94e2d5;
+  --t-crust: #11111b;
+  --t-mantle: #181825;
 }
 
 :root[data-term-theme="solarized"] {

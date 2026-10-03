@@ -6,10 +6,10 @@ import {
 } from "satteri-expressive-code"
 
 export const ecOptions: SatteriExpressiveCodeOptions = {
-  themes: ["github-light", "github-dark"],
-  useDarkModeMediaQuery: true,
+  themes: ["catppuccin-latte", "catppuccin-frappe"],
+  useDarkModeMediaQuery: false,
   themeCssSelector: (theme) =>
-    `[data-theme="${theme.name === "github-dark" ? "dark" : "light"}"]`,
+    `[data-theme="${theme.name === "catppuccin-frappe" ? "dark" : "light"}"]`,
   plugins: [pluginCollapsibleSections(), pluginLineNumbers()],
   defaultProps: {
     wrap: true,

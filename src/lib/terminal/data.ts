@@ -1,4 +1,5 @@
 import { SITE, SOCIALS, TERMINAL } from "@/consts"
+import { NOW } from "@/data/now"
 import { getPosts, getSubposts, getTags } from "@/lib/content"
 import type { TermData, TermPost } from "@/lib/terminal/types"
 import { getCollection, getEntry, type CollectionEntry } from "astro:content"
@@ -71,6 +72,7 @@ export async function getTerminalData(
       posts: tagged.map((post) => post.id),
     })),
     socials: SOCIALS.map(({ label, href }) => ({ label, href })),
+    now: NOW,
     builtAt: new Date().toISOString(),
   }
 }

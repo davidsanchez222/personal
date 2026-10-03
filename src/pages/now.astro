@@ -1,0 +1,103 @@
+---
+import MetaPage from "@/components/MetaPage.astro"
+import { TERMINAL } from "@/consts"
+import { NOW } from "@/data/now"
+import Layout from "@/layouts/Layout.astro"
+import {
+  bookList,
+  dashboard,
+  receipt,
+  recent,
+  player,
+  shelf,
+} from "@/lib/now/render"
+import { formatDate } from "@/lib/utils"
+import "@/styles/now.css"
+
+const updated = formatDate(new Date(NOW.updated))
+const host = `${TERMINAL.user}@${TERMINAL.host}`
+---
+
+<Layout>
+  <MetaPage
+    slot="head"
+    title="now"
+    description="What David is listening to, reading and eating right now."
+  />
+  <prose-content>
+    <h1>now</h1>
+    <p>
+      A
+      <a
+        href="https://nownownow.com/about"
+        target="_blank"
+        rel="noopener noreferrer"
+        >/now page</a
+      >: what I'm listening to, reading and eating lately. Last updated
+      {updated}. In the <a href="/">terminal</a>, try <code>now</code>,
+      <code>np</code>,
+      <code>reading</code>
+      or <code>ate</code>.
+    </p>
+  </prose-content>
+
+  <now-section>
+    <Fragment set:html={dashboard(NOW, { host })} />
+  </now-section>
+
+  <prose-content><h2 id="listening">listening</h2></prose-content>
+  <now-section data-listening>
+    <Fragment set:html={player(NOW.listening.current)} />
+    <Fragment set:html={recent(NOW.listening.recent)} />
+  </now-section>
+
+  <prose-content><h2 id="reading">reading</h2></prose-content>
+  <now-section>
+    <Fragment set:html={shelf(NOW.reading)} />
+    <Fragment set:html={bookList(NOW.reading)} />
+  </now-section>
+
+  <prose-content><h2 id="ate">last ate</h2></prose-content>
+  <now-section data-receipts>
+    {NOW.ate.map((meal, i) => (
+        <Fragment set:html={receipt(meal, 41 + NOW.ate.length - i)} />
+      ))}
+  </now-section>
+</Layout>
+
+<style>
+  now-section {
+    display: block;
+    margin-block: var(--space-s) var(--space-m);
+    font-family: var(--font-mono);
+    font-size: var(--step--1);
+  }
+
+  now-section[data-receipts] {
+    display: flex;
+    flex-wrap: wrap;
+    gap: var(--space-s);
+    align-items: flex-start;
+
+    :global(t-receipt:nth-child(even)) {
+      transform: rotate(1.2deg);
+    }
+  }
+</style>
+
+<script>
+  import { NOW } from "@/data/now"
+  import { getListening, startTicker } from "@/lib/now/live"
+  import { player, recent } from "@/lib/now/render"
+
+  startTicker()
+  // Swap in live Last.fm data when it's configured.
+  if (NOW.lastfm) {
+    getListening(NOW).then((listening) => {
+      const section = document.querySelector("now-section[data-listening]")
+      if (section)
+        section.innerHTML =
+          player(listening.current, listening) + recent(listening.recent)
+    })
+  }
+</script>

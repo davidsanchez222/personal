@@ -29,7 +29,7 @@ export type Ctx = {
 export type Command = {
   name: string
   desc: string
-  group: "about" | "files" | "system" | "fun"
+  group: "about" | "now" | "files" | "system" | "fun"
   usage?: string
   aliases?: string[]
   hidden?: boolean

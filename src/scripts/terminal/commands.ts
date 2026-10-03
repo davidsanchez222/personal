@@ -1,8 +1,19 @@
+import { getListening, startTicker } from "@/lib/now/live"
+import {
+  ago,
+  bookList,
+  dashboard,
+  player,
+  receipt,
+  recent,
+  shelf,
+} from "@/lib/now/render"
 import type { TermPost } from "@/lib/terminal/types"
 import {
   FORTUNES,
   TUX,
   browserName,
+  cava,
   cmatrix,
   cowsay,
   figlet,
@@ -32,11 +43,13 @@ import {
 import type { Command, Ctx, Terminal } from "@/scripts/terminal/shell"
 
 export const THEMES = [
-  "default",
+  "frappe",
+  "latte",
+  "macchiato",
+  "mocha",
   "dracula",
   "gruvbox",
   "nord",
-  "catppuccin",
   "solarized",
   "phosphor",
   "amber",
@@ -74,6 +87,24 @@ const hash = (text: string) => {
   for (const ch of text) h = Math.imul(h ^ ch.charCodeAt(0), 0x01000193)
   return (h >>> 0).toString(16).padStart(8, "0").slice(0, 7)
 }
+
+/** Catppuccin Frappé and Latte are the site's own dark and light modes. */
+const currentTheme = () => {
+  const root = document.documentElement
+  return (
+    root.dataset.termTheme ??
+    (root.dataset.theme === "light" ? "latte" : "frappe")
+  )
+}
+
+/** Runs a command line from inside another command (no echo or history). */
+async function runLine(ctx: Ctx, line: string) {
+  const [name, ...args] = line.split(" ")
+  await ctx.term.commands.get(name)?.run({ ...ctx, name, args, raw: line })
+}
+
+const stamp = (date: Date) =>
+  `${date.toLocaleString("en-US", { month: "short" })} ${String(date.getDate()).padStart(2, "0")} ${date.toTimeString().slice(0, 8)}`
 
 const uptime = () => {
   const start = Number(storage.get(sessionStorage, SESSION_START)) || Date.now()
@@ -231,6 +262,7 @@ export function createCommands(): Command[] {
       run({ term }) {
         const groups: [Command["group"], string][] = [
           ["about", "about me"],
+          ["now", "right now"],
           ["files", "filesystem"],
           ["system", "system"],
         ]
@@ -283,7 +315,7 @@ export function createCommands(): Command[] {
       aliases: ["fastfetch"],
       run({ term }) {
         const { user, host } = term.data.prompt
-        const theme = document.documentElement.dataset.termTheme ?? "default"
+        const theme = currentTheme()
         const info: [string, string][] = [
           [
             "OS",
@@ -305,6 +337,14 @@ export function createCommands(): Command[] {
         if (term.data.user.pronouns)
           info.push(["Pronouns", term.data.user.pronouns])
         if (term.data.user.bio) info.push(["Bio", term.data.user.bio])
+        const { listening, reading, ate } = term.data.now
+        info.push([
+          "Music",
+          `${listening.current.title} — ${listening.current.artist}`,
+        ])
+        const book = reading.find((b) => b.status === "reading")
+        if (book) info.push(["Reading", book.title])
+        if (ate[0]) info.push(["Last meal", ate[0].dish])
 
         const title = `${user}@${host}`
         const right = [
@@ -659,7 +699,7 @@ export function createCommands(): Command[] {
       desc: "print a file",
       group: "files",
       usage: "cat <file> ...",
-      run(ctx) {
+      async run(ctx) {
         const { term, args, stdin } = ctx
         if (args.length === 0) {
           if (stdin !== undefined) term.text(stdin)
@@ -671,6 +711,10 @@ export function createCommands(): Command[] {
           if (!node) continue
           if (node.kind === "dir") {
             term.error(`cat: ${path}: Is a directory`)
+            continue
+          }
+          if (node.run) {
+            await runLine(ctx, node.run)
             continue
           }
           if (node.exec) {
@@ -710,7 +754,8 @@ export function createCommands(): Command[] {
           return term.error(`usage: ${name} <file>`)
         const node = lookup(ctx, target)
         if (!node) return
-        const href = node.kind === "dir" ? node.href : node.href
+        if (node.kind === "file" && node.run) return runLine(ctx, node.run)
+        const { href } = node
         if (!href) {
           if (node.kind === "dir")
             return term.error(`${name}: ${target}: Is a directory`)
@@ -829,7 +874,7 @@ export function createCommands(): Command[] {
       usage: `theme <${THEMES.join("|")}>`,
       run({ term, args }) {
         const root = document.documentElement
-        const current = root.dataset.termTheme ?? "default"
+        const current = currentTheme()
         const [choice] = args
         if (!choice) {
           for (const theme of THEMES)
@@ -842,9 +887,12 @@ export function createCommands(): Command[] {
           return term.error(
             `theme: unknown theme '${choice}'. try: ${THEMES.join(", ")}`,
           )
-        if (choice === "default") {
+        if (choice === "frappe" || choice === "latte") {
+          const mode = choice === "latte" ? "light" : "dark"
           delete root.dataset.termTheme
+          root.dataset.theme = mode
           storage.set(localStorage, "termTheme", null)
+          storage.set(localStorage, "theme", mode)
         } else {
           root.dataset.termTheme = choice
           storage.set(localStorage, "termTheme", choice)
@@ -1249,6 +1297,203 @@ export function createCommands(): Command[] {
         term.print(rainbow("★ +30 lives. cheat mode enabled. ★"))
       },
     },
+    // -------------------------------------------------------------- now
+    {
+      name: "now",
+      desc: "what I'm up to, in tmux",
+      group: "now",
+      aliases: ["dashboard"],
+      async run({ term }) {
+        const { user, host } = term.data.prompt
+        const listening = await getListening(term.data.now)
+        if (term.capturing) {
+          term.text(
+            `music: ${listening.current.title} — ${listening.current.artist}`,
+          )
+          const book = term.data.now.reading.find((b) => b.status === "reading")
+          if (book) term.text(`books: ${book.title} — ${book.author}`)
+          if (term.data.now.ate[0])
+            term.text(
+              `food: ${term.data.now.ate[0].dish} @ ${term.data.now.ate[0].place}`,
+            )
+          return
+        }
+        const date = new Date()
+        const time = `${date.toTimeString().slice(0, 5)} ${String(date.getDate()).padStart(2, "0")}-${date.toLocaleString("en-US", { month: "short" })}-${String(date.getFullYear()).slice(2)}`
+        term.print(
+          dashboard(term.data.now, {
+            action: (command, label) => cmd(command, label),
+            listening,
+            relative: true,
+            host: `${user}@${host}`,
+            time,
+          }),
+        )
+        term.print(
+          `${c("muted", "[detached from session now]")} ${c("muted", "· click a pane title to zoom in · gui version:")} ${link("/now", "~/now ↗")}`,
+        )
+        startTicker()
+      },
+    },
+    {
+      name: "np",
+      desc: "what I'm listening to",
+      group: "now",
+      aliases: ["nowplaying", "music", "spotify"],
+      async run({ term }) {
+        const loading = term.data.now.lastfm
+          ? term.print(
+              c(
+                "muted",
+                `♪ asking last.fm what ${term.data.prompt.user} is playing…`,
+              ),
+            )
+          : undefined
+        const listening = await getListening(term.data.now)
+        loading?.remove()
+        const { current } = listening
+        if (term.capturing) {
+          term.text(`${current.title} — ${current.artist}`)
+          return
+        }
+        term.print(player(current, listening))
+        if (listening.recent.length) {
+          term.print(c("muted", "recently played:"))
+          term.print(recent(listening.recent))
+        }
+        term.print(
+          `${c("muted", "try")} ${cmd("cava")} ${c("muted", "for the visualizer, or")} ${cmd("np | cowsay")}`,
+        )
+        startTicker()
+      },
+    },
+    {
+      name: "reading",
+      desc: "my bookshelf",
+      group: "now",
+      aliases: ["books", "goodreads"],
+      run({ term }) {
+        const books = term.data.now.reading
+        if (books.length === 0)
+          return term.print(
+            c("muted", "the shelf is empty. recommendations welcome."),
+          )
+        if (term.capturing) {
+          for (const book of books)
+            term.text(`${book.status}: ${book.title} — ${book.author}`)
+          return
+        }
+        term.print(shelf(books))
+        term.print(bookList(books))
+        term.print()
+        term.print(c("muted", "(the cat is not for sale.)"))
+      },
+    },
+    {
+      name: "ate",
+      desc: "where I last ate",
+      group: "now",
+      aliases: ["food", "lastmeal", "hungry"],
+      run({ term }) {
+        const meals = term.data.now.ate
+        const [meal] = meals
+        if (!meal)
+          return term.print(
+            c("muted", "stomach.service: inactive (dead). nothing logged yet."),
+          )
+        if (term.capturing) {
+          term.text(
+            `${meal.dish} @ ${meal.place} (${ago(new Date(meal.date))})`,
+          )
+          return
+        }
+        term.print(receipt(meal, 41 + meals.length, true))
+        if (meals.length > 1)
+          term.print(
+            `${c("muted", "full history:")} ${cmd("journalctl -u stomach")}`,
+          )
+      },
+    },
+    {
+      name: "journalctl",
+      desc: "system logs",
+      group: "now",
+      hidden: true,
+      usage: "journalctl -u stomach",
+      run({ term, args }) {
+        const unit = args[args.indexOf("-u") + 1] ?? ""
+        if (!/^stomach(\.service)?$/.test(unit)) {
+          term.print(c("muted", "-- No entries --"))
+          term.print(`${c("muted", "hint:")} ${cmd("journalctl -u stomach")}`)
+          return
+        }
+        const meals = [...term.data.now.ate].sort(
+          (a, b) => +new Date(a.date) - +new Date(b.date),
+        )
+        if (meals.length === 0)
+          return term.print(c("muted", "-- No entries --"))
+        const first = new Date(meals[0].date)
+        const last = new Date(meals.at(-1)?.date ?? meals[0].date)
+        term.print(
+          c(
+            "muted",
+            `-- Logs begin at ${first.toDateString()}, end at ${last.toDateString()}. --`,
+          ),
+        )
+        const unitTag = `${term.data.prompt.host} ${c("cyan", "stomach[1337]")}:`
+        for (const meal of meals) {
+          const date = new Date(meal.date)
+          const prefix = `${c("muted", stamp(date))} ${unitTag}`
+          term.print(
+            `${prefix} Started digesting ${c("bold", `"${meal.dish}"`)} from ${esc(meal.place)}.`,
+          )
+          if (meal.rating)
+            term.print(
+              `${prefix} rating=${c("yellow", "★".repeat(meal.rating) + "☆".repeat(5 - meal.rating))}`,
+            )
+          if (meal.note)
+            term.print(`${prefix} ${c("muted", `note: ${meal.note}`)}`)
+          if ((meal.rating ?? 5) <= 2)
+            term.print(
+              `${prefix} ${c("red", "stomach.service: Main process exited, code=exited, status=1/FAILURE")}`,
+            )
+        }
+      },
+    },
+    {
+      name: "tmux",
+      desc: "terminal multiplexer",
+      group: "now",
+      hidden: true,
+      async run(ctx) {
+        const { term, args } = ctx
+        const [sub = "attach"] = args
+        if (["attach", "a", "attach-session", "at"].includes(sub))
+          return runLine(ctx, "now")
+        if (sub === "ls" || sub === "list-sessions")
+          return term.text(
+            `now: 3 windows (created ${new Date(term.data.now.updated).toDateString()}) (attached)`,
+          )
+        if (sub === "new" || sub === "new-session")
+          return term.error(
+            "sessions should be nested with care, unset $TMUX to force",
+          )
+        if (sub === "kill-server")
+          return term.print("nice try. the server is static.")
+        term.error(`unknown command: ${sub}`)
+      },
+    },
+    {
+      name: "cava",
+      desc: "audio visualizer",
+      group: "now",
+      hidden: true,
+      async run({ term, signal }) {
+        const { current } = await getListening(term.data.now)
+        term.print(c("muted", "press any key to exit"))
+        await cava(term, signal, `♪ ${current.title} — ${current.artist}`)
+      },
+    },
     {
       name: "motd",
       desc: "message of the day",
@@ -1273,8 +1518,27 @@ export function createCommands(): Command[] {
         )
         storage.set(localStorage, "dsh.lastLogin", new Date().toISOString())
         term.print()
+        const { listening, reading, ate } = term.data.now
+        const book = reading.find((b) => b.status === "reading")
+        const strip = term.print(
+          [
+            `${c("magenta", "♪")} ${cmd("np", `${listening.current.title} — ${listening.current.artist}`)}`,
+            book ? `${c("peach", "📖")} ${cmd("reading", book.title)}` : "",
+            ate[0] ? `${c("peach", "🍽")} ${cmd("ate", ate[0].dish)}` : "",
+          ]
+            .filter(Boolean)
+            .join("   "),
+          "t-strip",
+        )
+        if (term.data.now.lastfm)
+          getListening(term.data.now).then(({ current }) => {
+            const button = strip.querySelector('[data-cmd="np"]')
+            if (button)
+              button.textContent = `${current.title} — ${current.artist}`
+          })
+        term.print()
         term.print(
-          `Type ${cmd("help")} to get started, or try ${cmd("whoami")}, ${cmd("ls")}, ${cmd("neofetch")} or ${cmd(`man ${term.data.prompt.user}`)}.`,
+          `Type ${cmd("help")} to get started, or try ${cmd("whoami")}, ${cmd("now")}, ${cmd("ls")} or ${cmd(`man ${term.data.prompt.user}`)}.`,
         )
         term.print(
           c("muted", "Prefer a normal website? ") + link("/blog", "gui mode →"),

@@ -1,3 +1,5 @@
+import type { Now } from "@/data/now"
+
 export type TermPost = {
   id: string
   slug: string
@@ -36,5 +38,6 @@ export type TermData = {
   projects: TermProject[]
   tags: { name: string; posts: string[] }[]
   socials: { label: string; href: string }[]
+  now: Now
   builtAt: string
 }

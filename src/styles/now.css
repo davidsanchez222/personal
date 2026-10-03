@@ -1,0 +1,601 @@
+/* "now" widgets, shared by the terminal and the /now page. */
+:is(
+  t-player,
+  t-vinyl,
+  t-track,
+  t-label,
+  t-eq,
+  t-progress,
+  t-bar,
+  t-fill,
+  t-shelf,
+  t-book,
+  t-books,
+  t-status,
+  t-pacman,
+  t-progress-line,
+  t-receipt,
+  t-receipt-head,
+  t-receipt-rows,
+  t-receipt-foot,
+  t-barcode,
+  t-tmux,
+  t-pane,
+  t-pane-title,
+  t-tmux-status,
+  t-now-line
+) {
+  display: block;
+  white-space: normal;
+  text-indent: 0;
+}
+
+/* ----------------------------------------------------------------- player */
+
+t-player {
+  display: flex;
+  align-items: center;
+  gap: 1.1em;
+  max-inline-size: 34em;
+  padding: 0.9em 1.1em;
+  background-color: var(--t-mantle);
+  border: 1px solid var(--border);
+  border-radius: 10px;
+
+  &[data-compact] {
+    padding: 0;
+    background: none;
+    border: 0;
+  }
+}
+
+t-vinyl {
+  position: relative;
+  display: grid;
+  place-items: center;
+  flex: none;
+  inline-size: 5.5em;
+  aspect-ratio: 1;
+  border-radius: 50%;
+  background:
+    conic-gradient(
+      from 20deg,
+      transparent 0 8%,
+      rgb(255 255 255 / 0.09) 13%,
+      transparent 20% 55%,
+      rgb(255 255 255 / 0.07) 62%,
+      transparent 70%
+    ),
+    repeating-radial-gradient(circle, #1b1c26 0 2px, #2b2d3b 2px 3px);
+  box-shadow: 0 0 0 2px var(--border), 0 6px 18px -6px rgb(0 0 0 / 0.6);
+  animation: t-spin 3.2s linear infinite;
+
+  &::before,
+  img {
+    grid-area: 1 / 1;
+    inline-size: 38%;
+    aspect-ratio: 1;
+    border-radius: 50%;
+  }
+
+  &::before {
+    content: "";
+    background:
+      radial-gradient(circle, transparent 55%, rgb(0 0 0 / 0.15) 56% 60%, transparent 61%),
+      var(--label);
+  }
+
+  &:has(img)::before {
+    display: none;
+  }
+
+  img {
+    object-fit: cover;
+  }
+
+  &::after {
+    content: "";
+    position: absolute;
+    inset: 0;
+    margin: auto;
+    inline-size: 6%;
+    aspect-ratio: 1;
+    border-radius: 50%;
+    background-color: var(--t-crust);
+  }
+
+  [data-compact] & {
+    inline-size: 4.25em;
+  }
+}
+
+t-track {
+  flex: 1;
+  min-inline-size: 0;
+
+  strong {
+    display: block;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+    color: var(--foreground);
+    font-weight: 600;
+  }
+
+  strong a {
+    color: inherit;
+  }
+
+  > span {
+    display: block;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+    color: var(--muted-foreground);
+  }
+}
+
+t-label {
+  margin-block-end: 0.15em;
+  font-size: 0.72em;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--t-green);
+}
+
+.t-live {
+  color: var(--t-red);
+  animation: t-pulse 1.4s ease-in-out infinite;
+}
+
+t-eq {
+  display: flex;
+  align-items: flex-end;
+  gap: 2px;
+  block-size: 1.4em;
+  margin-block: 0.45em;
+
+  i {
+    flex: 1;
+    max-inline-size: 6px;
+    block-size: var(--h);
+    border-radius: 1px;
+    background: linear-gradient(to top, var(--t-magenta), var(--t-pink));
+    transform-origin: bottom;
+    animation: t-eq var(--d) ease-in-out infinite alternate;
+  }
+}
+
+t-progress {
+  display: flex;
+  align-items: center;
+  gap: 0.6em;
+  font-size: 0.78em;
+  font-variant-numeric: tabular-nums;
+  color: var(--muted-foreground);
+}
+
+t-bar {
+  flex: 1;
+  block-size: 4px;
+  overflow: hidden;
+  border-radius: 2px;
+  background-color: var(--muted);
+}
+
+t-fill {
+  block-size: 100%;
+  background-color: var(--t-green);
+  transition: width 1s linear;
+}
+
+t-player[data-paused] :is(t-vinyl, t-eq i) {
+  animation-play-state: paused;
+}
+
+t-player[data-paused] t-label {
+  color: var(--muted-foreground);
+}
+
+.t-recent {
+  margin: 0.75em 0 0;
+  padding: 0;
+  list-style: none;
+  font-size: 0.85em;
+
+  li {
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+
+  li::before {
+    content: "↺ ";
+    color: var(--muted-foreground);
+  }
+
+  span {
+    color: var(--muted-foreground);
+  }
+
+  a {
+    color: inherit;
+  }
+}
+
+/* ------------------------------------------------------------------ books */
+
+t-shelf {
+  position: relative;
+  display: flex;
+  align-items: flex-end;
+  gap: 3px;
+  max-inline-size: 30em;
+  block-size: 9em;
+  padding-inline: 0.75em;
+  border-block-end: 0.45em solid
+    color-mix(in oklab, var(--t-peach) 45%, var(--t-crust));
+  box-shadow: 0 0.6em 0.8em -0.6em rgb(0 0 0 / 0.5);
+}
+
+t-book {
+  position: relative;
+  display: grid;
+  place-items: center;
+  /* Physical sizes: logical ones swap axes under vertical writing mode. */
+  width: var(--w);
+  height: var(--h);
+  padding: 0.6em 0;
+  overflow: hidden;
+  writing-mode: vertical-rl;
+  font-size: 0.62em;
+  font-weight: 600;
+  color: var(--t-crust);
+  text-shadow: none;
+  background-color: var(--c);
+  border-radius: 3px 3px 1px 1px;
+  box-shadow:
+    inset -3px 0 0 rgb(0 0 0 / 0.18),
+    inset 3px 0 0 rgb(255 255 255 / 0.18),
+    inset 0 6px 0 -3px rgb(0 0 0 / 0.15);
+  transition: transform 0.2s;
+
+  span {
+    max-height: 100%;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+
+  &:hover {
+    transform: translateY(-0.6em);
+  }
+
+  &[data-status="reading"] {
+    overflow: visible;
+    transform: translateY(-1.1em);
+
+    /* bookmark ribbon */
+    &::after {
+      content: "";
+      position: absolute;
+      inset-block-start: -0.3em;
+      inset-inline-start: 50%;
+      inline-size: 0.6em;
+      block-size: 2.2em;
+      background-color: var(--t-red);
+      clip-path: polygon(0 0, 100% 0, 100% 100%, 50% 78%, 0 100%);
+    }
+  }
+
+  &[data-status="queued"] {
+    margin-inline-start: 0.5em;
+    opacity: 0.85;
+    transform: rotate(10deg);
+    transform-origin: bottom left;
+  }
+}
+
+t-shelf-cat {
+  margin-inline-start: auto;
+  font-size: 1.7em;
+  line-height: 1;
+  cursor: pointer;
+
+  &:hover {
+    animation: t-purr 0.3s ease-in-out 3;
+  }
+}
+
+t-books {
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr);
+  gap: 0.55em 1.4em;
+  margin-block-start: 1.1em;
+
+  strong {
+    color: var(--foreground);
+    font-weight: 600;
+  }
+
+  strong a {
+    color: inherit;
+  }
+
+  span,
+  q {
+    color: var(--muted-foreground);
+  }
+
+  q {
+    display: block;
+    font-style: italic;
+  }
+}
+
+t-status {
+  white-space: nowrap;
+
+  &[data-status="reading"] {
+    color: var(--t-peach);
+  }
+
+  &[data-status="finished"] {
+    color: var(--t-green);
+  }
+
+  &[data-status="queued"] {
+    color: var(--muted-foreground);
+  }
+}
+
+t-pacman {
+  display: inline;
+  white-space: pre;
+  font-family: var(--font-mono);
+}
+
+.t-pac {
+  color: var(--t-yellow);
+  font-weight: 700;
+}
+
+.t-pac-trail {
+  color: var(--muted-foreground);
+  opacity: 0.6;
+}
+
+.t-pac-dots {
+  color: var(--t-peach);
+}
+
+/* ------------------------------------------------------------------- food */
+
+t-receipt {
+  --paper: #eff1f5;
+  --ink: #4c4f69;
+
+  inline-size: min(100%, 19em);
+  margin-block: 0.5em 1em;
+  padding: 1.1em 1.2em 1.7em;
+  font-family: var(--font-mono);
+  font-size: 0.85em;
+  line-height: 1.45;
+  color: var(--ink);
+  text-shadow: none;
+  background-color: var(--paper);
+  filter: drop-shadow(0 10px 14px rgb(0 0 0 / 0.35));
+  transform: rotate(-1.4deg);
+  mask: conic-gradient(from -45deg at bottom, #0000, #000 1deg 89deg, #0000 90deg)
+    50% / 12px 100%;
+
+  a {
+    color: inherit;
+  }
+
+  q {
+    display: block;
+    margin-block-start: 0.6em;
+    padding-block-start: 0.6em;
+    border-block-start: 1px dashed var(--ink);
+    font-style: italic;
+  }
+}
+
+t-receipt-head {
+  margin-block-end: 0.6em;
+  padding-block-end: 0.6em;
+  text-align: center;
+  border-block-end: 1px dashed var(--ink);
+
+  b {
+    display: block;
+    letter-spacing: 0.25em;
+  }
+
+  span {
+    display: block;
+    font-size: 0.85em;
+    opacity: 0.75;
+  }
+}
+
+t-receipt-rows div {
+  display: flex;
+  justify-content: space-between;
+  gap: 1em;
+
+  > span:first-child {
+    font-size: 0.85em;
+    text-transform: uppercase;
+    opacity: 0.6;
+  }
+
+  > :last-child {
+    text-align: end;
+  }
+}
+
+.t-stars {
+  color: var(--t-yellow);
+  letter-spacing: 0.1em;
+  white-space: nowrap;
+
+  t-receipt & {
+    color: #df8e1d;
+  }
+}
+
+t-receipt-foot {
+  margin-block-start: 0.4em;
+  text-align: center;
+  font-size: 0.8em;
+}
+
+t-barcode {
+  block-size: 2.2em;
+  margin-block: 0.6em 0.3em;
+  background: repeating-linear-gradient(
+    90deg,
+    var(--ink) 0 2px,
+    transparent 2px 4px,
+    var(--ink) 4px 5px,
+    transparent 5px 8px,
+    var(--ink) 8px 11px,
+    transparent 11px 12px,
+    var(--ink) 12px 13px,
+    transparent 13px 17px
+  );
+}
+
+/* ------------------------------------------------------------------- tmux */
+
+t-tmux {
+  display: grid;
+  grid-template-columns: minmax(0, 1.1fr) minmax(0, 1fr);
+  grid-template-areas:
+    "music books"
+    "music food"
+    "status status";
+  max-inline-size: 62em;
+  margin-block: 0.25em;
+  border: 1px solid var(--border);
+  background-color: var(--background);
+
+  @media (width < 48rem) {
+    grid-template-columns: minmax(0, 1fr);
+    grid-template-areas: "music" "books" "food" "status";
+  }
+
+  > t-pane:nth-of-type(1) {
+    grid-area: music;
+  }
+
+  > t-pane:nth-of-type(2) {
+    grid-area: books;
+  }
+
+  > t-pane:nth-of-type(3) {
+    grid-area: food;
+  }
+
+  t-shelf {
+    font-size: 0.8em;
+  }
+}
+
+t-pane {
+  position: relative;
+  min-inline-size: 0;
+  margin: -1px 0 0 -1px;
+  padding: 2em 1em 1em;
+  border: 1px solid var(--border);
+
+  &[data-active] {
+    z-index: 1;
+    border-color: var(--t-green);
+  }
+}
+
+t-pane-title {
+  position: absolute;
+  inset-block-start: 0.4em;
+  inset-inline-start: 1em;
+  font-size: 0.75em;
+  color: var(--muted-foreground);
+}
+
+t-now-line {
+  margin-block-start: 1.1em;
+
+  strong {
+    color: var(--foreground);
+    font-weight: 600;
+  }
+
+  strong a {
+    color: inherit;
+  }
+
+  > span {
+    color: var(--muted-foreground);
+  }
+
+  t-pacman,
+  .t-stars {
+    display: block;
+    margin-block: 0.25em;
+  }
+}
+
+t-tmux-status {
+  display: flex;
+  gap: 1ch;
+  grid-area: status;
+  padding-inline: 0.6ch;
+  overflow: hidden;
+  font-size: 0.85em;
+  white-space: nowrap;
+  color: var(--t-crust);
+  text-shadow: none;
+  background-color: var(--t-green);
+
+  .t-tmux-right {
+    margin-inline-start: auto;
+  }
+}
+
+@keyframes t-spin {
+  to {
+    transform: rotate(1turn);
+  }
+}
+
+@keyframes t-eq {
+  from {
+    transform: scaleY(0.15);
+  }
+  to {
+    transform: scaleY(1);
+  }
+}
+
+@keyframes t-pulse {
+  50% {
+    opacity: 0.3;
+  }
+}
+
+@keyframes t-purr {
+  50% {
+    transform: rotate(-8deg);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  t-vinyl,
+  t-eq i,
+  .t-live {
+    animation: none;
+  }
+}

@@ -10,6 +10,8 @@ export type FsFile = {
   post?: TermPost
   project?: TermProject
   exec?: boolean
+  /** Reading this file runs a command instead (e.g. ~/now/listening.m3u). */
+  run?: string
 }
 
 export type FsDir = {
@@ -119,6 +121,15 @@ export function buildFs(data: TermData, commands: string[]): FsDir {
       "  …and the Konami code: ↑ ↑ ↓ ↓ ← → ← → b a",
     ].join("\n"),
   })
+
+  const now = dir("now", home, "/now")
+  now.mtime = new Date(data.now.updated)
+  const nowFile = (name: string, run: string, bytes: number) =>
+    file(now, { name, run, bytes, mtime: new Date(data.now.updated) })
+  nowFile("listening.m3u", "np", 64 * (data.now.listening.recent.length + 1))
+  nowFile("reading.txt", "reading", 96 * data.now.reading.length)
+  nowFile("stomach.log", "journalctl -u stomach", 128 * data.now.ate.length)
+  nowFile("dashboard.tmux", "now", 1024)
 
   const blog = dir("blog", home, "/blog")
   for (const post of data.posts) {

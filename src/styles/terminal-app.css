@@ -11,7 +11,7 @@ body {
   min-height: 100dvh;
   padding: clamp(0rem, 4vw, 2.5rem);
   font-family: var(--font-mono);
-  background-color: var(--background);
+  background-color: var(--t-crust);
   background-image: radial-gradient(
     color-mix(in oklab, var(--foreground) 10%, transparent) 1px,
     transparent 1px
@@ -72,7 +72,7 @@ term-titlebar {
   padding: 0.55rem 0.85rem;
   font-size: 0.78rem;
   color: var(--muted-foreground);
-  background-color: var(--muted);
+  background-color: var(--t-mantle);
   border-block-end: 1px solid var(--border);
   user-select: none;
 
@@ -175,6 +175,9 @@ term-titlebar {
 .t-blue { color: var(--t-blue); }
 .t-magenta { color: var(--t-magenta); }
 .t-cyan { color: var(--t-cyan); }
+.t-peach { color: var(--t-peach); }
+.t-pink { color: var(--t-pink); }
+.t-lavender { color: var(--t-lavender); }
 .t-muted { color: var(--muted-foreground); }
 .t-bold { color: var(--foreground); font-weight: var(--font-weight-medium, 500); }
 

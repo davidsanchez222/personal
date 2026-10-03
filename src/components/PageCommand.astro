@@ -11,6 +11,7 @@ const commands: Record<string, () => [string, string]> = {
   blog: () => (tail ? ["~/blog", `less ${tail}.md`] : ["~/blog", "ls -lt"]),
   tags: () => (tail ? ["~/blog", `grep -rl "#${tail}" .`] : ["~/tags", "ls"]),
   projects: () => ["~/projects", "git log --oneline"],
+  now: () => ["~", "tmux attach -t now"],
   authors: () => (tail ? ["~", `finger ${tail}`] : ["~", "who"]),
   "404": () => ["~", "cd ???"],
 }

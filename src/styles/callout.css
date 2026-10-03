@@ -65,9 +65,9 @@ prose-content {
     }
   }
 
-  [data-callout="note"]      { --accent: #0090ff; }
-  [data-callout="tip"]       { --accent: #30a46c; }
-  [data-callout="warning"]   { --accent: #ffc53d; }
-  [data-callout="caution"]   { --accent: #e5484d; }
-  [data-callout="important"] { --accent: #8e4ec6; }
+  [data-callout="note"]      { --accent: var(--t-blue); }
+  [data-callout="tip"]       { --accent: var(--t-green); }
+  [data-callout="warning"]   { --accent: var(--t-yellow); }
+  [data-callout="caution"]   { --accent: var(--t-red); }
+  [data-callout="important"] { --accent: var(--t-magenta); }
 }

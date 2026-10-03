@@ -1,3 +1,4 @@
+import { startTicker } from "@/lib/now/live"
 import type { TermData } from "@/lib/terminal/types"
 import { BOOTED_KEY, boot } from "@/scripts/terminal/boot"
 import {
@@ -80,4 +81,5 @@ addEventListener(
 )
 
 document.documentElement.classList.add("t-ready")
+startTicker()
 start().then(() => term.focus())
