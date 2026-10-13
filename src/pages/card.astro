@@ -1,0 +1,253 @@
+---
+import "@/styles/reset.css"
+import "@/styles/fonts.css"
+import "@/styles/color.css"
+import "@/styles/shape.css"
+import "@/styles/terminal.css"
+
+import { getEntry } from "astro:content"
+import ArrowRight from "@/assets/icons/arrow-right.svg"
+import MetaHead from "@/components/MetaHead.astro"
+import MetaPage from "@/components/MetaPage.astro"
+import { GOATCOUNTER, SITE, SOCIALS, TERMINAL } from "@/consts"
+
+// The page an NFC business card links to (/card?src=nfc): a phone-first
+// contact card rather than the keyboard-driven terminal.
+const author = await getEntry("authors", TERMINAL.author)
+const tagline = TERMINAL.whoami[0].replaceAll("`", "")
+const socials = SOCIALS.filter(({ href }) => !href.startsWith("/"))
+---
+
+<html lang={SITE.locale} dir={SITE.dir}>
+  <MetaHead>
+    <MetaPage
+      title="card"
+      description={`${SITE.title}'s contact card.`}
+      noindex
+    />
+    {GOATCOUNTER && (
+        <script
+          is:inline
+          data-goatcounter={`https://${GOATCOUNTER}.goatcounter.com/count`}
+          async
+          src="//gc.zgo.at/count.js"
+        />
+      )}
+  </MetaHead>
+  <body>
+    <card-window>
+      <card-titlebar>
+        <t-dots aria-hidden="true"
+          ><span></span><span></span><span></span></t-dots
+        >
+        <span>{TERMINAL.user}@{TERMINAL.host}: ~/card</span>
+      </card-titlebar>
+
+      <card-body>
+        <card-header>
+          {author?.data.avatar && (
+              <img
+                src={author.data.avatar}
+                alt=""
+                width="88"
+                height="88"
+                loading="eager"
+              />
+            )}
+          <div>
+            <p class="prompt" aria-hidden="true">$ whoami</p>
+            <h1>{SITE.title}</h1>
+            {author?.data.pronouns && (
+                <p class="muted">{author.data.pronouns}</p>
+              )}
+          </div>
+        </card-header>
+
+        <p class="tagline">{tagline}</p>
+
+        <nav aria-label="Contact and links">
+          <a href="/card/david.vcf" class="primary">
+            <span class="label">Save contact</span>
+            <span aria-hidden="true">+</span>
+          </a>
+          {socials.map(({ href, label, icon: Icon }) => (
+              <a href={href} target="_blank" rel="noopener noreferrer">
+                <Icon aria-hidden="true" />
+                <span class="label">{label}</span>
+                <ArrowRight aria-hidden="true" />
+              </a>
+            ))}
+          <a href="/blog">
+            <span class="glyph" aria-hidden="true">~/</span>
+            <span class="label">Blog</span>
+            <ArrowRight aria-hidden="true" />
+          </a>
+          <a href="/">
+            <span class="glyph" aria-hidden="true">&gt;_</span>
+            <span class="label">Open the terminal</span>
+            <ArrowRight aria-hidden="true" />
+          </a>
+        </nav>
+      </card-body>
+    </card-window>
+  </body>
+</html>
+
+<style>
+  body {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    min-height: 100dvh;
+    padding: 1rem;
+    font-family: var(--font-mono);
+    background-color: var(--t-crust);
+    background-image: radial-gradient(
+      color-mix(in oklab, var(--foreground) 10%, transparent) 1px,
+      transparent 1px
+    );
+    background-size: 22px 22px;
+  }
+
+  card-window {
+    display: block;
+    inline-size: 100%;
+    max-inline-size: 28rem;
+    overflow: hidden;
+    background-color: var(--background);
+    border: 1px solid var(--border);
+    border-radius: 12px;
+    box-shadow: 0 40px 90px -30px rgb(0 0 0 / 0.45);
+  }
+
+  card-titlebar {
+    display: flex;
+    align-items: center;
+    gap: 0.75rem;
+    padding: 0.55rem 0.85rem;
+    font-size: 0.78rem;
+    color: var(--muted-foreground);
+    background-color: var(--t-mantle);
+    border-block-end: 1px solid var(--border);
+    user-select: none;
+
+    t-dots {
+      display: flex;
+      gap: 0.45rem;
+
+      span {
+        inline-size: 12px;
+        block-size: 12px;
+        border-radius: 50%;
+        background: #ff5f57;
+
+        &:nth-child(2) {
+          background: #febc2e;
+        }
+
+        &:nth-child(3) {
+          background: #28c840;
+        }
+      }
+    }
+  }
+
+  card-body {
+    display: flex;
+    flex-direction: column;
+    gap: 1.25rem;
+    padding: 1.5rem 1.25rem;
+  }
+
+  card-header {
+    display: flex;
+    align-items: center;
+    gap: 1rem;
+
+    img {
+      flex: none;
+      inline-size: 88px;
+      block-size: 88px;
+      border-radius: 50%;
+      border: 2px solid var(--t-accent);
+    }
+
+    h1 {
+      font-size: 1.35rem;
+      line-height: 1.2;
+    }
+  }
+
+  .prompt {
+    font-size: 0.8rem;
+    color: var(--t-green);
+  }
+
+  .muted {
+    font-size: 0.85rem;
+    color: var(--muted-foreground);
+  }
+
+  .tagline {
+    font-size: 0.9rem;
+    line-height: 1.55;
+    color: var(--muted-foreground);
+  }
+
+  nav {
+    display: flex;
+    flex-direction: column;
+    gap: 0.6rem;
+
+    a {
+      display: flex;
+      align-items: center;
+      gap: 0.75rem;
+      min-block-size: 3.25rem;
+      padding-inline: 1rem;
+      font-size: 0.95rem;
+      color: var(--foreground);
+      text-decoration: none;
+      background-color: var(--muted);
+      border: 1px solid var(--border);
+      border-radius: var(--radius-lg);
+      transition: border-color 0.15s;
+
+      &:hover,
+      &:active {
+        border-color: var(--t-accent);
+      }
+
+      .label {
+        flex: 1;
+      }
+
+      svg {
+        flex: none;
+        inline-size: 1.125rem;
+        block-size: 1.125rem;
+      }
+
+      > svg:last-child {
+        color: var(--muted-foreground);
+      }
+    }
+
+    .glyph {
+      inline-size: 1.125rem;
+      font-size: 0.8rem;
+      color: var(--t-accent);
+    }
+
+    .primary {
+      font-weight: 500;
+      color: var(--t-crust);
+      background-color: var(--t-accent);
+      border-color: var(--t-accent);
+
+      .label + span {
+        font-size: 1.25rem;
+      }
+    }
+  }
+</style>

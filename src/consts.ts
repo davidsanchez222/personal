@@ -39,3 +39,8 @@ export const TERMINAL = {
     "I write about the things I build and tinker with. Run `man david` to read my blog.",
   ],
 };
+
+// GoatCounter site code (the `<code>` in https://<code>.goatcounter.com).
+// Counts visits to /card, including the `?src=nfc` the NFC tag links to.
+// Leave empty to skip loading analytics.
+export const GOATCOUNTER = "";

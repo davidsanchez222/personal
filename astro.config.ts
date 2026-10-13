@@ -20,7 +20,8 @@ export default defineConfig({
       filter: (page) =>
         !/\/blog\/[^/]+\/[^/]+\/?$/.test(page) &&
         !/\/authors\/[^/]+\/?$/.test(page) &&
-        !page.includes("/tags/"),
+        !page.includes("/tags/") &&
+        !/\/card\/?$/.test(page),
     }),
   ],
   markdown: {
