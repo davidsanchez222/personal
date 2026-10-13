@@ -41,6 +41,6 @@ export const TERMINAL = {
 };
 
 // GoatCounter site code (the `<code>` in https://<code>.goatcounter.com).
-// Counts visits to /card, including the `?src=nfc` the NFC tag links to.
+// Counts visits to /card. Add `?src=qr` or `?src=nfc` to tell sources apart.
 // Leave empty to skip loading analytics.
 export const GOATCOUNTER = "";

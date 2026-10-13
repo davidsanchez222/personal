@@ -11,8 +11,8 @@ import MetaHead from "@/components/MetaHead.astro"
 import MetaPage from "@/components/MetaPage.astro"
 import { GOATCOUNTER, SITE, SOCIALS, TERMINAL } from "@/consts"
 
-// The page an NFC business card links to (/card?src=nfc): a phone-first
-// contact card rather than the keyboard-driven terminal.
+// The page my lockscreen QR code (and later an NFC card) links to: a
+// phone-first contact card rather than the keyboard-driven terminal.
 const author = await getEntry("authors", TERMINAL.author)
 const tagline = TERMINAL.whoami[0].replaceAll("`", "")
 const socials = SOCIALS.filter(({ href }) => !href.startsWith("/"))
