@@ -49,6 +49,14 @@ const projects = defineCollection({
       image: image().optional(),
       startDate: z.coerce.date().optional(),
       endDate: z.coerce.date().optional(),
+      preview: z
+        .object({
+          cast: z.string().startsWith("/"),
+          cols: z.number().int().positive(),
+          rows: z.number().int().positive(),
+          poster: image().optional(),
+        })
+        .optional(),
     }),
 })
 

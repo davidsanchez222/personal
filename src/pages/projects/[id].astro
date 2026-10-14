@@ -1,0 +1,111 @@
+---
+import ExternalIcon from "@/assets/icons/external.svg"
+import MetaPage from "@/components/MetaPage.astro"
+import TerminalPreview from "@/components/TerminalPreview.astro"
+import Layout from "@/layouts/Layout.astro"
+import { hasProjectPage } from "@/lib/content"
+import { formatDate } from "@/lib/utils"
+import { getCollection, render, type CollectionEntry } from "astro:content"
+
+export async function getStaticPaths() {
+  const projects = await getCollection("projects")
+  return projects
+    .filter(hasProjectPage)
+    .map((project) => ({ params: { id: project.id }, props: { project } }))
+}
+
+type Props = { project: CollectionEntry<"projects"> }
+
+const { project } = Astro.props
+const { name, description, link, tags, startDate, endDate, preview } =
+  project.data
+const { Content } = await render(project)
+---
+
+<Layout crumbs={[{ label: name, href: `/projects/${project.id}` }]}>
+  <MetaPage slot="head" title={name} description={description} />
+  <article>
+    <header>
+      <h1>{name}</h1>
+      <project-meta>
+        {startDate && (
+            <span>
+              <time datetime={startDate.toISOString()}>
+                {formatDate(startDate)}
+              </time>
+              {" → "}
+              {endDate ? (
+                <time datetime={endDate.toISOString()}>
+                  {formatDate(endDate)}
+                </time>
+              ) : (
+                "Present"
+              )}
+            </span>
+          )}
+        <a href={link} target="_blank" rel="noopener noreferrer">
+          <ExternalIcon aria-hidden="true" />
+          {new URL(link).hostname}
+        </a>
+      </project-meta>
+      <p>{description}</p>
+      {tags && tags.length > 0 && (
+          <project-tags>
+            {tags.map((tag) => (
+              <span>{tag}</span>
+            ))}
+          </project-tags>
+        )}
+    </header>
+    {preview && <TerminalPreview name={name} preview={preview} />}
+    <prose-content>
+      <Content />
+    </prose-content>
+  </article>
+</Layout>
+
+<style>
+  header {
+    display: flex;
+    flex-direction: column;
+    gap: var(--space-3xs);
+
+    project-meta {
+      display: flex;
+      flex-wrap: wrap;
+      align-items: center;
+      gap: var(--space-2xs);
+      font-size: var(--step--1);
+      color: var(--muted-foreground);
+
+      a {
+        display: inline-flex;
+        align-items: center;
+        gap: var(--space-3xs);
+      }
+
+      svg {
+        inline-size: 1em;
+        block-size: 1em;
+      }
+    }
+
+    p {
+      color: var(--muted-foreground);
+    }
+
+    project-tags {
+      display: flex;
+      flex-wrap: wrap;
+      gap: var(--space-3xs);
+      font-size: var(--step--1);
+
+      span {
+        padding-inline: var(--space-2xs);
+        color: var(--muted-foreground);
+        background-color: color-mix(in oklab, var(--muted) 50%, transparent);
+        border-radius: var(--radius-full);
+      }
+    }
+  }
+</style>
