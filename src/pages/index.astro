@@ -21,14 +21,32 @@ const { user, host } = data.prompt
     <MetaPage />
     <script is:inline>
       document.documentElement.classList.add("js")
+      try {
+        if (localStorage.getItem("dsh.zoomed"))
+          document.documentElement.dataset.termZoomed = ""
+      } catch {}
     </script>
   </MetaHead>
   <body>
     <term-window>
       <term-titlebar>
-        <t-dots aria-hidden="true"
-          ><span></span><span></span><span></span></t-dots
-        >
+        <t-dots>
+          <button
+            type="button"
+            data-win="close"
+            aria-label="Close terminal"
+          ></button>
+          <button
+            type="button"
+            data-win="minimize"
+            aria-label="Minimize terminal"
+          ></button>
+          <button
+            type="button"
+            data-win="zoom"
+            aria-label="Zoom terminal"
+          ></button>
+        </t-dots>
         <span id="term-title">{user}@{host}: ~</span>
         <a href="/blog" title="Prefer a normal website?">gui mode (blog) ↗</a>
       </term-titlebar>

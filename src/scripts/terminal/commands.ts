@@ -43,6 +43,7 @@ import {
   storage,
 } from "@/scripts/terminal/html"
 import type { Command, Ctx, Terminal } from "@/scripts/terminal/shell"
+import { vim } from "@/scripts/terminal/vim"
 
 export const THEMES = [
   "frappe",
@@ -171,85 +172,6 @@ function printPost(term: Terminal, file: FsFile, path: string) {
   term.print(
     `${c("muted", "→")} ${cmd(`less ${path}`)} ${c("muted", "to read the whole thing")}`,
   )
-}
-
-// -------------------------------------------------------------------- vim
-
-function vim(term: Terminal, lines: string[], name?: string) {
-  let attempts = 0
-  if (lines.length) {
-    for (const line of lines) term.print(rich(line))
-  } else {
-    term.print(c("blue", "~"))
-    term.print(
-      `${c("blue", "~")}                 ${c("bold", "VIM - Vi IMproved")}`,
-    )
-    term.print(`${c("blue", "~")}                  version 9.1.0`)
-    term.print(
-      `${c("blue", "~")}         by Bram Moolenaar et al. (rest in peace, Bram)`,
-    )
-    term.print(c("blue", "~"))
-    term.print(
-      `${c("blue", "~")}      type  ${c("yellow", ":q<Enter>")}       to exit`,
-    )
-    term.print(
-      `${c("blue", "~")}      ${c("muted", "(if only it were that easy)")}`,
-    )
-  }
-  for (let i = 0; i < 3; i++) term.print(c("blue", "~"))
-  term.print(
-    c("muted", name ? `"${name}" [readonly] ${lines.length}L` : "[No Name]"),
-  )
-
-  const quit = () => {
-    term.capture = undefined
-    term.print(
-      attempts === 0
-        ? c("green", "you exited vim on the first try. impressive. 🏆")
-        : c(
-            "green",
-            `you escaped vim after ${attempts} attempt${attempts === 1 ? "" : "s"}. put that on your résumé. ✨`,
-          ),
-    )
-    term.renderPrompt()
-  }
-
-  term.capture = {
-    prompt: "",
-    handle(line) {
-      const input = line.trim()
-      if (/^(:(q|q!|qa!?|wq!?|wqa|x|quit)|ZZ|ZQ)$/.test(input)) return quit()
-      attempts++
-      if (input === "i" || input === "a")
-        term.print(
-          c("bold", "-- INSERT --") +
-            c("muted", " …just kidding, this buffer is readonly."),
-        )
-      else if (input === ":help")
-        term.print(c("muted", "E149: Sorry, no help for help. (it's :q)"))
-      else if (input === ":w")
-        term.print(
-          c("red", "E45: 'readonly' option is set (add ! to override)"),
-        )
-      else if (input.startsWith(":"))
-        term.print(c("red", `E492: Not an editor command: ${input.slice(1)}`))
-      else if (/^(exit|quit|q|help|esc|escape)$/i.test(input))
-        term.print(
-          c(
-            "muted",
-            "nice try. you're in vim now. (psst: type :q and press Enter)",
-          ),
-        )
-      else term.print(c("muted", "-- NORMAL --"))
-      if (attempts === 5)
-        term.print(c("yellow", "hint: colon. q. enter. you've got this."))
-    },
-    interrupt() {
-      term.print(
-        "Type  :qa!  and press <Enter> to abandon all changes and exit Vim",
-      )
-    },
-  }
 }
 
 // --------------------------------------------------------------- commands
@@ -1541,7 +1463,8 @@ export function createCommands(): Command[] {
           `Type ${cmd("help")} to get started, or try ${cmd("whoami")}, ${cmd("now")}, ${cmd("ls")} or ${cmd(`man ${term.data.prompt.user}`)}.`,
         )
         term.print(
-          c("muted", "Prefer a normal website? ") + link("/blog", "gui mode (blog) →"),
+          c("muted", "Prefer a normal website? ") +
+            link("/blog", "gui mode (blog) →"),
         )
         term.print()
       },

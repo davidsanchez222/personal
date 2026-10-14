@@ -249,3 +249,69 @@ main h1:first-of-type::after {
     animation: none;
   }
 }
+
+/* macOS traffic lights on the terminal and /card windows. They show their
+   glyphs on hover, and an invisible ::before widens the tap target. */
+t-dots {
+  display: flex;
+  gap: 0.45rem;
+
+  button {
+    all: unset;
+    position: relative;
+    display: grid;
+    place-items: center;
+    inline-size: 12px;
+    block-size: 12px;
+    border-radius: 50%;
+    background: #ff5f57;
+    cursor: pointer;
+
+    &::before {
+      content: "";
+      position: absolute;
+      inset: -8px -4px;
+    }
+
+    &::after {
+      content: "×";
+      font: 700 10px/1 system-ui, sans-serif;
+      color: rgb(0 0 0 / 0.55);
+      opacity: 0;
+    }
+
+    &:nth-child(2) {
+      background: #febc2e;
+
+      &::after {
+        content: "−";
+      }
+    }
+
+    &:nth-child(3) {
+      background: #28c840;
+
+      &::after {
+        content: "+";
+      }
+    }
+
+    &:focus-visible {
+      outline: 2px solid var(--ring);
+      outline-offset: 2px;
+    }
+  }
+
+  &:hover button::after,
+  &:focus-within button::after {
+    opacity: 1;
+  }
+}
+
+/* The window shrinking away when its close button is pressed. */
+@keyframes t-window-close {
+  to {
+    opacity: 0;
+    transform: scale(0.96);
+  }
+}

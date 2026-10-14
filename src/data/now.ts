@@ -76,7 +76,7 @@ export const NOW: Now = {
       status: "reading",
       progress: 50,
       pages: 208,
-      note: "currently on the chapter about tracer bullets",
+      note: "i wanna run inference on a 3090 soon",
     },
     {
       title: "Designing Data-Intensive Applications",

@@ -14,9 +14,14 @@ const section = NAVIGATION.find(
 
 <aside data-bar>
   <sidebar-inner>
-    <a href="/" aria-label={`${SITE.title}: back to the terminal`}>
-      <prompt-glyph aria-hidden="true">&gt;_</prompt-glyph>
+    <a
+      href="/"
+      aria-label={`${SITE.title}: back to the terminal`}
+      title="Back to the terminal"
+    >
+      <img src="/favicon.svg?v=2" alt="" width="22" height="22">
       <span>{SITE.title}</span>
+      <terminal-hint aria-hidden="true">↩ back to terminal</terminal-hint>
     </a>
     <nav>
       <ul>
@@ -90,6 +95,7 @@ const section = NAVIGATION.find(
     gap: var(--space-2xs);
 
     > a {
+      position: relative;
       display: inline-flex;
       align-items: center;
       gap: 0.5rem;
@@ -99,22 +105,49 @@ const section = NAVIGATION.find(
       color: var(--foreground);
       text-decoration-line: none;
 
-      prompt-glyph {
-        display: inline-grid;
-        place-items: center;
+      img {
+        flex-shrink: 0;
         inline-size: 1.375rem;
         block-size: 1.375rem;
-        flex-shrink: 0;
-        font-family: var(--font-mono);
-        font-size: 0.7rem;
-        font-weight: var(--font-weight-medium);
-        color: var(--t-green);
-        background-color: var(--foreground);
-        border-radius: var(--radius-sm, 4px);
       }
 
-      &:hover prompt-glyph {
-        animation: glyph-blink 0.9s steps(1) infinite;
+      /* Hints that the name leads back to the terminal: on hover/focus where
+         there's a pointer, always on touch screens. It floats above the name
+         so it never pushes it onto two lines. */
+      terminal-hint {
+        position: absolute;
+        inset-block-end: calc(100% + 0.25rem);
+        inset-inline-start: 0;
+        white-space: nowrap;
+        pointer-events: none;
+        font-family: var(--font-mono);
+        font-size: 0.75rem;
+        font-weight: normal;
+        color: var(--t-green);
+        opacity: 0;
+        transform: translateY(0.25rem);
+        transition:
+          opacity 0.15s,
+          transform 0.15s;
+      }
+
+      &:is(:hover, :focus-visible) terminal-hint {
+        opacity: 1;
+        transform: none;
+      }
+
+      @media (hover: none) {
+        terminal-hint {
+          opacity: 0.7;
+          transform: none;
+        }
+      }
+
+      /* The mobile top bar has no room beside the name. */
+      @media (width < 64rem) {
+        terminal-hint {
+          display: none;
+        }
       }
 
       @media (width < 26rem) {
@@ -129,12 +162,6 @@ const section = NAVIGATION.find(
       flex-direction: row;
       align-items: center;
       justify-content: space-between;
-    }
-  }
-
-  @keyframes glyph-blink {
-    50% {
-      color: transparent;
     }
   }
 

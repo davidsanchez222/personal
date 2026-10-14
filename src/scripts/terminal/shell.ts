@@ -41,6 +41,11 @@ type Capture = {
   secret?: boolean
   handle: (line: string) => void | Promise<void>
   interrupt?: () => void
+  /** Full-screen programs (vim) take every key as it's pressed instead of a
+   * line at a time, and draw their own screen in place of the prompt. Keys
+   * are "a", "Enter", "Escape", "C-c"…; return false to let the shell
+   * handle it. */
+  onKey?: (key: string) => boolean
 }
 
 type Elements = {
@@ -307,6 +312,7 @@ export class Terminal {
   }
 
   renderPrompt() {
+    this.el.prompt.classList.toggle("t-raw", Boolean(this.capture?.onKey))
     this.el.ps1.innerHTML = this.capture ? esc(this.capture.prompt) : this.ps1()
     if (this.el.title)
       this.el.title.textContent = `${this.data.prompt.user}@${this.data.prompt.host}: ${prettyPath(pathOf(this.cwd))}`
@@ -340,7 +346,17 @@ export class Terminal {
 
   private bind() {
     const { input, body, out } = this.el
-    input.addEventListener("input", () => this.renderLine())
+    input.addEventListener("input", () => {
+      // Soft keyboards (Android especially) send "Unidentified" keydowns, so
+      // raw-key programs read what was typed from the input instead.
+      const onKey = this.capture?.onKey
+      if (onKey && input.value) {
+        for (const ch of input.value) onKey(ch)
+        this.setInput("")
+        return
+      }
+      this.renderLine()
+    })
     document.addEventListener("selectionchange", () => {
       if (document.activeElement === input) this.renderLine()
     })
@@ -400,6 +416,15 @@ export class Terminal {
       event.preventDefault()
       this.handleBusyKey(event)
       return
+    }
+
+    if (this.capture?.onKey && !event.metaKey && !event.altKey) {
+      if (key === "Unidentified" || key === "Process") return
+      const name = event.ctrlKey ? `C-${key.toLowerCase()}` : key
+      if (this.capture.onKey(name)) {
+        event.preventDefault()
+        return
+      }
     }
 
     if (event.ctrlKey && !event.metaKey) {

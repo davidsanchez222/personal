@@ -58,6 +58,38 @@ term-window {
   }
 }
 
+/* Traffic-light states: zoom fills the viewport, minimize collapses to the
+   title bar and close shrinks the window away before handing off to /blog. */
+:root[data-term-zoomed] {
+  body {
+    padding: 0;
+  }
+
+  term-window {
+    inline-size: 100%;
+    block-size: 100dvh;
+    border: 0;
+    border-radius: 0;
+  }
+}
+
+term-window[data-minimized] {
+  block-size: auto;
+
+  #term-body {
+    display: none;
+  }
+
+  term-titlebar {
+    border-block-end: 0;
+    cursor: pointer;
+  }
+}
+
+term-window[data-closing] {
+  animation: t-window-close 0.18s ease-in forwards;
+}
+
 :root:is([data-term-theme="phosphor"], [data-term-theme="amber"]) term-window {
   box-shadow:
     0 0 60px -10px color-mix(in oklab, var(--foreground) 25%, transparent),
@@ -75,26 +107,6 @@ term-titlebar {
   background-color: var(--t-mantle);
   border-block-end: 1px solid var(--border);
   user-select: none;
-
-  t-dots {
-    display: flex;
-    gap: 0.45rem;
-
-    span {
-      inline-size: 12px;
-      block-size: 12px;
-      border-radius: 50%;
-      background: #ff5f57;
-
-      &:nth-child(2) {
-        background: #febc2e;
-      }
-
-      &:nth-child(3) {
-        background: #28c840;
-      }
-    }
-  }
 
   #term-title {
     overflow: hidden;
@@ -269,6 +281,16 @@ mark {
   &[hidden] {
     display: none;
   }
+
+  /* A full-screen program (vim) is drawing the screen: keep the input
+     focused for the keyboard, but out of sight. */
+  &.t-raw {
+    position: absolute;
+    inline-size: 1px;
+    block-size: 1px;
+    overflow: hidden;
+    clip-path: inset(50%);
+  }
 }
 
 #term-input {
@@ -356,5 +378,49 @@ t-fallback {
 @media (prefers-reduced-motion: reduce) {
   .t-focused #term-cursor {
     animation: none;
+  }
+}
+
+/* vim: a block cursor in normal mode, a bar in insert mode, the splash
+   centred on its tilde rows and a status line with a ruler. */
+.t-vim-cursor {
+  color: var(--background);
+  background-color: var(--foreground);
+}
+
+.t-vim-bar {
+  color: inherit;
+  background: none;
+  box-shadow: inset 2px 0 var(--foreground);
+}
+
+.t-vim-row {
+  display: flex;
+}
+
+.t-vim-splash {
+  flex: 1;
+  text-align: center;
+}
+
+.t-vim-status {
+  display: flex;
+  justify-content: space-between;
+  gap: 1ch;
+}
+
+/* Phones have no Escape key. */
+.t-vim-esc {
+  all: unset;
+  display: none;
+  margin-inline-end: 1ch;
+  padding-inline: 0.75ch;
+  color: var(--background);
+  background-color: var(--muted-foreground);
+  border-radius: var(--radius-sm, 4px);
+  cursor: pointer;
+
+  @media (hover: none) {
+    display: inline-block;
   }
 }

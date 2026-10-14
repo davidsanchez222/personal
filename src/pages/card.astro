@@ -9,6 +9,7 @@ import { getEntry } from "astro:content"
 import ArrowRight from "@/assets/icons/arrow-right.svg"
 import MetaHead from "@/components/MetaHead.astro"
 import MetaPage from "@/components/MetaPage.astro"
+import QRCode from "qrcode"
 import { GOATCOUNTER, SITE, SOCIALS, TERMINAL } from "@/consts"
 
 // The page my lockscreen QR code (and later an NFC card) links to: a
@@ -16,6 +17,15 @@ import { GOATCOUNTER, SITE, SOCIALS, TERMINAL } from "@/consts"
 const author = await getEntry("authors", TERMINAL.author)
 const tagline = TERMINAL.whoami[0].replaceAll("`", "")
 const socials = SOCIALS.filter(({ href }) => !href.startsWith("/"))
+
+// The back of the card (green button): a QR code to scan straight off the
+// screen, generated at build time so it follows the site's domain.
+const shareUrl = new URL("/card?src=qr", Astro.site ?? Astro.url).href
+const qr = await QRCode.toString(shareUrl, {
+  type: "svg",
+  margin: 1,
+  color: { dark: "#303446", light: "#eff1f5" },
+})
 ---
 
 <html lang={SITE.locale} dir={SITE.dir}>
@@ -37,59 +47,116 @@ const socials = SOCIALS.filter(({ href }) => !href.startsWith("/"))
   <body>
     <card-window>
       <card-titlebar>
-        <t-dots aria-hidden="true"
-          ><span></span><span></span><span></span></t-dots
+        <t-dots>
+          <button
+            type="button"
+            data-win="close"
+            aria-label="Close card"
+          ></button>
+          <button
+            type="button"
+            data-win="minimize"
+            aria-label="Minimize card"
+            aria-expanded="true"
+          ></button>
+          <button
+            type="button"
+            data-win="zoom"
+            aria-label="Show QR code"
+            aria-pressed="false"
+          ></button>
+        </t-dots>
+        <span
+          >{TERMINAL.user}@{TERMINAL.host}: ~/card<span data-qr-path
+            >/qr</span
+          ></span
         >
-        <span>{TERMINAL.user}@{TERMINAL.host}: ~/card</span>
       </card-titlebar>
 
-      <card-body>
-        <card-header>
-          {author?.data.avatar && (
-              <img
-                src={author.data.avatar}
-                alt=""
-                width="88"
-                height="88"
-                loading="eager"
-              />
-            )}
-          <div>
-            <p class="prompt" aria-hidden="true">$ whoami</p>
-            <h1>{SITE.title}</h1>
-            {author?.data.pronouns && (
-                <p class="muted">{author.data.pronouns}</p>
+      <card-faces>
+        <card-body data-face="front">
+          <card-header>
+            {author?.data.avatar && (
+                <img
+                  src={author.data.avatar}
+                  alt=""
+                  width="88"
+                  height="88"
+                  loading="eager"
+                />
               )}
+            <div>
+              <p class="prompt" aria-hidden="true">$ whoami</p>
+              <h1>{SITE.title}</h1>
+              {author?.data.pronouns && (
+                  <p class="muted">{author.data.pronouns}</p>
+                )}
+            </div>
+          </card-header>
+
+          <p class="tagline">{tagline}</p>
+
+          <nav aria-label="Contact and links">
+            <a href="/card/david.vcf" class="primary">
+              <span class="label">Save contact</span>
+              <span aria-hidden="true">+</span>
+            </a>
+            {socials.map(({ href, label, icon: Icon }) => (
+                <a href={href} target="_blank" rel="noopener noreferrer">
+                  <Icon aria-hidden="true" />
+                  <span class="label">{label}</span>
+                  <ArrowRight aria-hidden="true" />
+                </a>
+              ))}
+            <a href="/blog">
+              <span class="glyph" aria-hidden="true">~/</span>
+              <span class="label">Blog</span>
+              <ArrowRight aria-hidden="true" />
+            </a>
+            <a href="/">
+              <span class="glyph" aria-hidden="true">&gt;_</span>
+              <span class="label">Open the terminal</span>
+              <ArrowRight aria-hidden="true" />
+            </a>
+          </nav>
+        </card-body>
+        <card-body data-face="back" inert>
+          <p class="prompt" aria-hidden="true">$ qrencode ~/card</p>
+          <div class="qr" role="img" aria-label={`QR code for ${shareUrl}`}>
+            <Fragment set:html={qr} />
           </div>
-        </card-header>
-
-        <p class="tagline">{tagline}</p>
-
-        <nav aria-label="Contact and links">
-          <a href="/card/david.vcf" class="primary">
-            <span class="label">Save contact</span>
-            <span aria-hidden="true">+</span>
-          </a>
-          {socials.map(({ href, label, icon: Icon }) => (
-              <a href={href} target="_blank" rel="noopener noreferrer">
-                <Icon aria-hidden="true" />
-                <span class="label">{label}</span>
-                <ArrowRight aria-hidden="true" />
-              </a>
-            ))}
-          <a href="/blog">
-            <span class="glyph" aria-hidden="true">~/</span>
-            <span class="label">Blog</span>
-            <ArrowRight aria-hidden="true" />
-          </a>
-          <a href="/">
-            <span class="glyph" aria-hidden="true">&gt;_</span>
-            <span class="label">Open the terminal</span>
-            <ArrowRight aria-hidden="true" />
-          </a>
-        </nav>
-      </card-body>
+          <p class="tagline">Scan to open this card on your phone.</p>
+          <nav aria-label="Share">
+            <button type="button" class="primary" data-share={shareUrl}>
+              <span class="label">Share card</span>
+              <span aria-hidden="true">↗</span>
+            </button>
+            <button type="button" data-win="zoom">
+              <span class="glyph" aria-hidden="true">↺</span>
+              <span class="label">Flip back</span>
+            </button>
+          </nav>
+        </card-body>
+      </card-faces>
     </card-window>
+
+    <card-ended hidden>
+      <p><span class="prompt">$</span> exit</p>
+      <p>logout</p>
+      <p class="muted">[Process completed]</p>
+      <nav aria-label="Session ended">
+        <button type="button" class="primary" data-reopen>
+          <span class="label">Reopen card</span>
+          <span aria-hidden="true">↺</span>
+        </button>
+        <a href="/">
+          <span class="glyph" aria-hidden="true">→</span>
+          <span class="label"
+            >Visit {new URL(Astro.site ?? Astro.url).host}</span
+          >
+        </a>
+      </nav>
+    </card-ended>
   </body>
 </html>
 
@@ -109,7 +176,8 @@ const socials = SOCIALS.filter(({ href }) => !href.startsWith("/"))
     background-size: 22px 22px;
   }
 
-  card-window {
+  card-window,
+  card-ended {
     display: block;
     inline-size: 100%;
     max-inline-size: 28rem;
@@ -131,24 +199,8 @@ const socials = SOCIALS.filter(({ href }) => !href.startsWith("/"))
     border-block-end: 1px solid var(--border);
     user-select: none;
 
-    t-dots {
-      display: flex;
-      gap: 0.45rem;
-
-      span {
-        inline-size: 12px;
-        block-size: 12px;
-        border-radius: 50%;
-        background: #ff5f57;
-
-        &:nth-child(2) {
-          background: #febc2e;
-        }
-
-        &:nth-child(3) {
-          background: #28c840;
-        }
-      }
+    [data-qr-path] {
+      display: none;
     }
   }
 
@@ -157,6 +209,87 @@ const socials = SOCIALS.filter(({ href }) => !href.startsWith("/"))
     flex-direction: column;
     gap: 1.25rem;
     padding: 1.5rem 1.25rem;
+  }
+
+  /* Both faces share one grid cell; zoom flips between them. */
+  card-faces {
+    display: grid;
+    transition: transform 0.45s cubic-bezier(0.3, 0.7, 0.3, 1);
+    transform-style: preserve-3d;
+
+    card-body {
+      grid-area: 1 / 1;
+      backface-visibility: hidden;
+    }
+
+    [data-face="back"] {
+      justify-content: center;
+      transform: rotateY(180deg);
+    }
+  }
+
+  .qr {
+    align-self: center;
+    inline-size: min(100%, 15rem);
+    padding: 0.5rem;
+    background: #eff1f5;
+    border: 2px solid var(--t-accent);
+    border-radius: var(--radius-xl);
+
+    :global(svg) {
+      display: block;
+      inline-size: 100%;
+      block-size: auto;
+    }
+  }
+
+  card-window[data-flipped] {
+    card-faces {
+      transform: rotateY(180deg);
+    }
+
+    [data-qr-path] {
+      display: inline;
+    }
+  }
+
+  card-window[data-minimized] {
+    card-faces {
+      display: none;
+    }
+
+    card-titlebar {
+      border-block-end: 0;
+      cursor: pointer;
+    }
+  }
+
+  card-window[data-closing] {
+    animation: t-window-close 0.18s ease-in forwards;
+  }
+
+  card-ended {
+    padding: 1.5rem 1.25rem;
+    font-size: 0.9rem;
+    line-height: 1.6;
+
+    &[hidden] {
+      display: none;
+    }
+
+    nav {
+      margin-block-start: 1.25rem;
+    }
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    card-faces {
+      transition: none;
+    }
+
+    card-window[data-closing] {
+      animation-duration: 0s;
+    }
   }
 
   card-header {
@@ -199,10 +332,15 @@ const socials = SOCIALS.filter(({ href }) => !href.startsWith("/"))
     flex-direction: column;
     gap: 0.6rem;
 
-    a {
+    a,
+    button {
       display: flex;
       align-items: center;
       gap: 0.75rem;
+      inline-size: 100%;
+      font: inherit;
+      text-align: start;
+      cursor: pointer;
       min-block-size: 3.25rem;
       padding-inline: 1rem;
       font-size: 0.95rem;
@@ -251,3 +389,83 @@ const socials = SOCIALS.filter(({ href }) => !href.startsWith("/"))
     }
   }
 </style>
+
+<script>
+  // Traffic lights: close ends the "session", minimize collapses the card to
+  // its title bar and zoom flips it over to the QR code.
+  const win = document.querySelector("card-window") as HTMLElement
+  const ended = document.querySelector("card-ended") as HTMLElement
+  const front = win.querySelector('[data-face="front"]') as HTMLElement
+  const back = win.querySelector('[data-face="back"]') as HTMLElement
+  const button = (action: string) =>
+    win.querySelector(`t-dots [data-win="${action}"]`) as HTMLElement
+
+  const setMinimized = (minimized: boolean) => {
+    win.toggleAttribute("data-minimized", minimized)
+    button("minimize").setAttribute("aria-expanded", String(!minimized))
+  }
+
+  const setFlipped = (flipped: boolean) => {
+    win.toggleAttribute("data-flipped", flipped)
+    front.inert = flipped
+    back.inert = !flipped
+    const zoom = button("zoom")
+    zoom.setAttribute("aria-pressed", String(flipped))
+    zoom.setAttribute("aria-label", flipped ? "Show card" : "Show QR code")
+  }
+
+  const close = () => {
+    win.dataset.closing = ""
+    win.addEventListener(
+      "animationend",
+      () => {
+        win.hidden = true
+        win.removeAttribute("data-closing")
+        ended.hidden = false
+        ended.querySelector<HTMLElement>("[data-reopen]")?.focus()
+      },
+      { once: true },
+    )
+  }
+
+  win.addEventListener("click", (event) => {
+    const target = event.target as HTMLElement
+    const action = target.closest<HTMLElement>("[data-win]")?.dataset.win
+    if (action === "close") close()
+    else if (action === "minimize")
+      setMinimized(!win.hasAttribute("data-minimized"))
+    else if (action === "zoom") {
+      setMinimized(false)
+      setFlipped(!win.hasAttribute("data-flipped"))
+    } else if (
+      win.hasAttribute("data-minimized") &&
+      target.closest("card-titlebar")
+    )
+      setMinimized(false)
+  })
+
+  ended.querySelector("[data-reopen]")?.addEventListener("click", () => {
+    ended.hidden = true
+    setMinimized(false)
+    setFlipped(false)
+    win.hidden = false
+    button("close").focus()
+  })
+
+  // Share sheet where there is one, otherwise copy the link.
+  const share = win.querySelector<HTMLElement>("[data-share]")
+  share?.addEventListener("click", async () => {
+    const url = share.dataset.share ?? location.href
+    const label = share.querySelector(".label") as HTMLElement
+    try {
+      if (navigator.share) await navigator.share({ title: document.title, url })
+      else {
+        await navigator.clipboard.writeText(url)
+        label.textContent = "Link copied"
+        setTimeout(() => (label.textContent = "Share card"), 2000)
+      }
+    } catch {
+      // Share sheet dismissed, or clipboard blocked.
+    }
+  })
+</script>

@@ -43,8 +43,42 @@ async function start() {
   await motd()
 }
 
+// The title bar's traffic lights: close hands off to the blog, minimize
+// collapses the window to its title bar and zoom fills the viewport.
+const ZOOM_KEY = "dsh.zoomed"
+const win = document.querySelector("term-window") as HTMLElement
+const root = document.documentElement
+
+const restore = () => {
+  win.removeAttribute("data-minimized")
+  term.focus()
+}
+
+win.querySelector("term-titlebar")?.addEventListener("click", (event) => {
+  const target = event.target as HTMLElement
+  const action = target.closest<HTMLElement>("[data-win]")?.dataset.win
+  if (action === "close") {
+    term.interrupt(true)
+    win.dataset.closing = ""
+    term.go("/blog", "gui", new AbortController().signal, 180)
+  } else if (action === "minimize") {
+    if (win.toggleAttribute("data-minimized")) term.el.input.blur()
+    else term.focus()
+  } else if (action === "zoom") {
+    const zoomed = root.toggleAttribute("data-term-zoomed")
+    storage.set(localStorage, ZOOM_KEY, zoomed ? "1" : null)
+    restore()
+  } else if (win.hasAttribute("data-minimized") && !target.closest("a")) {
+    restore()
+  }
+})
+term.el.input.addEventListener("focus", () =>
+  win.removeAttribute("data-minimized"),
+)
+
 // Coming back from the blog through the back/forward cache.
 addEventListener("pageshow", (event) => {
+  win.removeAttribute("data-closing")
   if (event.persisted && term.job) term.finishJob(term.job)
 })
 addEventListener("pagehide", () => term.persist())
