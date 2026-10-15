@@ -49,6 +49,15 @@ const projects = defineCollection({
       image: image().optional(),
       startDate: z.coerce.date().optional(),
       endDate: z.coerce.date().optional(),
+      video: z.string().startsWith("/").optional(),
+      demo: z
+        .object({
+          wasm: z.string().startsWith("/"),
+          // The app's minimum terminal size; the demo grows to fill the window.
+          cols: z.number().int().positive(),
+          rows: z.number().int().positive(),
+        })
+        .optional(),
     }),
 })
 

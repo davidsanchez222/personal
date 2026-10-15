@@ -1,5 +1,6 @@
 ---
 import ExternalIcon from "@/assets/icons/external.svg"
+import { hasProjectPage } from "@/lib/content"
 import { formatDate } from "@/lib/utils"
 import { Image } from "astro:assets"
 import type { CollectionEntry } from "astro:content"
@@ -7,16 +8,17 @@ import type { CollectionEntry } from "astro:content"
 type Props = { project: CollectionEntry<"projects"> }
 
 const { project } = Astro.props
-const { name, description, link, tags, image, startDate, endDate } =
+const { name, description, link, tags, image, startDate, endDate, demo } =
   project.data
+const page = hasProjectPage(project) ? `/projects/${project.id}` : undefined
+const external = page ? {} : { target: "_blank", rel: "noopener noreferrer" }
 ---
 
 <li>
   {image && (
       <a
-        href={link}
-        target="_blank"
-        rel="noopener noreferrer"
+        href={page ?? link}
+        {...external}
         tabindex="-1"
         aria-hidden="true"
       >
@@ -24,7 +26,7 @@ const { name, description, link, tags, image, startDate, endDate } =
       </a>
     )}
   <entry-info>
-    <a href={link} target="_blank" rel="noopener noreferrer">{name}</a>
+    <a href={page ?? link} {...external}>{name}</a>
     <entry-meta>
       {startDate && (
           <project-dates>
@@ -45,6 +47,7 @@ const { name, description, link, tags, image, startDate, endDate } =
         <ExternalIcon aria-hidden="true" />
         {new URL(link).hostname}
       </project-link>
+      {demo && <project-demo>▶ live demo</project-demo>}
     </entry-meta>
     <p>{description}</p>
     {tags && tags.length > 0 && (
@@ -110,7 +113,14 @@ const { name, description, link, tags, image, startDate, endDate } =
           }
         }
 
-        project-dates ~ project-link::before {
+        project-demo {
+          display: flex;
+          gap: var(--space-3xs);
+          color: var(--t-accent);
+        }
+
+        project-dates ~ project-link::before,
+        project-link ~ project-demo::before {
           content: "·";
           color: var(--muted-foreground);
         }

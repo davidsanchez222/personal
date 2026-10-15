@@ -49,3 +49,6 @@ export async function getTags(): Promise<
     ),
   )
 }
+
+export const hasProjectPage = ({ data, body }: CollectionEntry<"projects">) =>
+  Boolean(data.video || data.demo || body?.trim())

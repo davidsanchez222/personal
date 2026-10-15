@@ -1,0 +1,162 @@
+---
+import ExternalIcon from "@/assets/icons/external.svg"
+import MetaPage from "@/components/MetaPage.astro"
+import Layout from "@/layouts/Layout.astro"
+import { hasProjectPage } from "@/lib/content"
+import { formatDate } from "@/lib/utils"
+import { getCollection, render, type CollectionEntry } from "astro:content"
+
+export async function getStaticPaths() {
+  const projects = await getCollection("projects")
+  return projects
+    .filter(hasProjectPage)
+    .map((project) => ({ params: { id: project.id }, props: { project } }))
+}
+
+type Props = { project: CollectionEntry<"projects"> }
+
+const { project } = Astro.props
+const { name, description, link, tags, startDate, endDate, video, demo } =
+  project.data
+const { Content } = await render(project)
+---
+
+<Layout crumbs={[{ label: name, href: `/projects/${project.id}` }]}>
+  <MetaPage slot="head" title={name} description={description} />
+  <article>
+    <header>
+      <h1>{name}</h1>
+      <project-meta>
+        {startDate && (
+            <span>
+              <time datetime={startDate.toISOString()}>
+                {formatDate(startDate)}
+              </time>
+              {" → "}
+              {endDate ? (
+                <time datetime={endDate.toISOString()}>
+                  {formatDate(endDate)}
+                </time>
+              ) : (
+                "Present"
+              )}
+            </span>
+          )}
+        <a href={link} target="_blank" rel="noopener noreferrer">
+          <ExternalIcon aria-hidden="true" />
+          {new URL(link).hostname}
+        </a>
+      </project-meta>
+      <p>{description}</p>
+      {tags && tags.length > 0 && (
+          <project-tags>
+            {tags.map((tag) => (
+              <span>{tag}</span>
+            ))}
+          </project-tags>
+        )}
+    </header>
+    {video && (
+        <video src={video} autoplay muted loop playsinline preload="metadata" />
+      )}
+    <prose-content>
+      <Content />
+    </prose-content>
+    {demo && (
+        <demo-launch>
+          <a href={`/projects/${project.id}/run`}>▶ run {name} in your browser</a>
+          <small>
+            opens full-window · ~2.5 MB download · printing disabled
+          </small>
+        </demo-launch>
+      )}
+  </article>
+</Layout>
+
+<script>
+  // Autoplay is a decorative loop; hand control back under reduced motion.
+  if (matchMedia("(prefers-reduced-motion: reduce)").matches) {
+    for (const video of document.querySelectorAll("article video")) {
+      video.pause()
+      video.controls = true
+    }
+  }
+</script>
+
+<style>
+  video {
+    display: block;
+    inline-size: 100%;
+    margin-block: var(--space-m);
+    border-radius: var(--radius-md);
+  }
+
+  demo-launch {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: var(--space-2xs) var(--space-s);
+    margin-block: var(--space-m);
+
+    a {
+      padding: var(--space-2xs) var(--space-s);
+      color: var(--primary-foreground);
+      text-decoration: none;
+      background-color: var(--primary);
+      border-radius: var(--radius-full);
+
+      &:hover,
+      &:focus-visible {
+        background-color: var(--t-accent);
+      }
+    }
+
+    small {
+      color: var(--muted-foreground);
+    }
+  }
+
+  header {
+    display: flex;
+    flex-direction: column;
+    gap: var(--space-3xs);
+
+    project-meta {
+      display: flex;
+      flex-wrap: wrap;
+      align-items: center;
+      gap: var(--space-2xs);
+      font-size: var(--step--1);
+      color: var(--muted-foreground);
+
+      a {
+        display: inline-flex;
+        align-items: center;
+        gap: var(--space-3xs);
+      }
+
+      svg {
+        inline-size: 1em;
+        block-size: 1em;
+      }
+    }
+
+    p {
+      color: var(--muted-foreground);
+    }
+
+    project-tags {
+      display: flex;
+      flex-wrap: wrap;
+      gap: var(--space-3xs);
+      font-size: var(--step--1);
+
+      span {
+        padding-inline: var(--space-2xs);
+        color: var(--muted-foreground);
+        background-color: color-mix(in oklab, var(--muted) 50%, transparent);
+        border-radius: var(--radius-full);
+      }
+    }
+  }
+</style>
