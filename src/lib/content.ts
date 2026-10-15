@@ -51,4 +51,4 @@ export async function getTags(): Promise<
 }
 
 export const hasProjectPage = ({ data, body }: CollectionEntry<"projects">) =>
-  Boolean(data.preview || body?.trim())
+  Boolean(data.video || data.demo || body?.trim())

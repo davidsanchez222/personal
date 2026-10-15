@@ -1,0 +1,75 @@
+---
+import "@/styles/reset.css"
+import "@/styles/fonts.css"
+import "@/styles/color.css"
+import "@/styles/typography.css"
+import "@/styles/typography-inline.css"
+import "@/styles/layout.css"
+import "@/styles/shape.css"
+import "@/styles/terminal.css"
+
+import LiveTerminal from "@/components/LiveTerminal.astro"
+import MetaHead from "@/components/MetaHead.astro"
+import MetaPage from "@/components/MetaPage.astro"
+import { SITE } from "@/consts"
+import { getCollection, type CollectionEntry } from "astro:content"
+
+// A full-viewport page for a project's live demo, outside the post layout's
+// centered column so the terminal can use the whole window.
+export async function getStaticPaths() {
+  const projects = await getCollection("projects", ({ data }) => data.demo)
+  return projects.map((project) => ({
+    params: { id: project.id },
+    props: { project },
+  }))
+}
+
+type Props = { project: CollectionEntry<"projects"> }
+
+const { project } = Astro.props
+const { name, demo } = project.data
+---
+
+<html lang={SITE.locale} dir={SITE.dir}>
+  <MetaHead>
+    <MetaPage
+      title={`${name} (live)`}
+      description={`Run ${name} in your browser.`}
+      noindex
+    />
+  </MetaHead>
+  <body>
+    <run-header>
+      <a href={`/projects/${project.id}`}>← {name}</a>
+      <small>runs locally in WebAssembly · printing disabled</small>
+    </run-header>
+    {demo && <LiveTerminal demo={demo} />}
+  </body>
+</html>
+
+<style>
+  body {
+    display: flex;
+    flex-direction: column;
+    block-size: 100dvh;
+    background-color: var(--background);
+  }
+
+  run-header {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: baseline;
+    justify-content: space-between;
+    gap: var(--space-2xs);
+    padding: var(--space-2xs) var(--space-s);
+    border-block-end: 1px solid var(--border);
+
+    small {
+      color: var(--muted-foreground);
+    }
+  }
+
+  :global(live-terminal) {
+    flex: 1;
+  }
+</style>

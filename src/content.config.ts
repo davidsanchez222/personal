@@ -49,12 +49,13 @@ const projects = defineCollection({
       image: image().optional(),
       startDate: z.coerce.date().optional(),
       endDate: z.coerce.date().optional(),
-      preview: z
+      video: z.string().startsWith("/").optional(),
+      demo: z
         .object({
-          cast: z.string().startsWith("/"),
+          wasm: z.string().startsWith("/"),
+          // The app's minimum terminal size; the demo grows to fill the window.
           cols: z.number().int().positive(),
           rows: z.number().int().positive(),
-          poster: image().optional(),
         })
         .optional(),
     }),

@@ -1,0 +1,339 @@
+---
+import type { CollectionEntry } from "astro:content"
+
+type Props = {
+  demo: NonNullable<CollectionEntry<"projects">["data"]["demo"]>
+}
+
+const { wasm, cols, rows } = Astro.props.demo
+---
+
+<live-terminal data-wasm={wasm} data-cols={cols} data-rows={rows}>
+  <terminal-stage>
+    <p data-loading>loading… (~2.5 MB)</p>
+  </terminal-stage>
+  <terminal-bar>
+    <small data-status
+      >mouse + keyboard · <kbd>?</kbd> help · <kbd>ctrl+c</kbd> quit</small
+    >
+    <button type="button" data-action="restart" hidden>restart</button>
+  </terminal-bar>
+</live-terminal>
+
+<script>
+  import type { ITheme } from "ghostty-web"
+
+  type Go = {
+    importObject: WebAssembly.Imports
+    run: (instance: WebAssembly.Instance) => Promise<void>
+  }
+
+  declare global {
+    // Bridge to niimtui/web/main.go: the page sets the size and callbacks,
+    // the Go program adds input(), resize() and mouse() once it starts.
+    var niimtui: {
+      cols: number
+      rows: number
+      onOutput: (bytes: Uint8Array) => void
+      onExit: (err?: string) => void
+      input?: (data: string) => void
+      resize?: (cols: number, rows: number) => void
+      mouse?: (
+        action: number,
+        button: number,
+        x: number,
+        y: number,
+        alt: boolean,
+        ctrl: boolean,
+        shift: boolean,
+      ) => void
+    }
+    var Go: new () => Go
+  }
+
+  // Catppuccin Frappé, the site's default dark theme. ghostty-web can't
+  // change themes after open(), so the terminal always uses this palette.
+  const FRAPPE: ITheme = {
+    background: "#303446",
+    foreground: "#c6d0f5",
+    cursor: "#f2d5cf",
+    cursorAccent: "#303446",
+    selectionBackground: "#626880",
+    selectionForeground: "#c6d0f5",
+    black: "#51576d",
+    red: "#e78284",
+    green: "#a6d189",
+    yellow: "#e5c890",
+    blue: "#8caaee",
+    magenta: "#f4b8e4",
+    cyan: "#81c8be",
+    white: "#b5bfe2",
+    brightBlack: "#626880",
+    brightRed: "#e78284",
+    brightGreen: "#a6d189",
+    brightYellow: "#e5c890",
+    brightBlue: "#8caaee",
+    brightMagenta: "#f4b8e4",
+    brightCyan: "#81c8be",
+    brightWhite: "#a5adce",
+  }
+
+  // Bubble Tea's MouseAction and MouseButton values (bubbletea/mouse.go).
+  const PRESS = 0
+  const RELEASE = 1
+  const MOTION = 2
+  const DOM_TO_TEA_BUTTON = [1, 2, 3] // left, middle, right
+  const WHEEL_UP = 4
+  const WHEEL_DOWN = 5
+
+  // ghostty-web doesn't report mouse events to the app; it uses them for
+  // text selection. While the app has mouse tracking on, catch them before
+  // they reach the canvas and send cell positions to the Go program.
+  function forwardMouse(
+    stage: HTMLElement,
+    canvas: HTMLCanvasElement,
+    term: {
+      cols: number
+      rows: number
+      hasMouseTracking: () => boolean
+      focus: () => void
+    },
+  ) {
+    let pressed: number | undefined
+    let lastMotion = ""
+
+    const send = (action: number, button: number, event: MouseEvent) => {
+      const rect = canvas.getBoundingClientRect()
+      const cell = (offset: number, size: number, count: number) =>
+        Math.min(count - 1, Math.max(0, Math.floor((offset / size) * count)))
+      const x = cell(event.clientX - rect.left, rect.width, term.cols)
+      const y = cell(event.clientY - rect.top, rect.height, term.rows)
+      if (action === MOTION) {
+        const key = `${x},${y},${button}`
+        if (key === lastMotion) return
+        lastMotion = key
+      }
+      const { altKey, ctrlKey, shiftKey } = event
+      globalThis.niimtui?.mouse?.(
+        action,
+        button,
+        x,
+        y,
+        altKey,
+        ctrlKey,
+        shiftKey,
+      )
+    }
+
+    const capture = { capture: true }
+    stage.addEventListener(
+      "mousedown",
+      (event) => {
+        if (!term.hasMouseTracking()) return
+        event.preventDefault()
+        event.stopPropagation()
+        term.focus()
+        pressed = DOM_TO_TEA_BUTTON[event.button] ?? 0
+        send(PRESS, pressed, event)
+      },
+      capture,
+    )
+    window.addEventListener(
+      "mousemove",
+      (event) => {
+        const inside =
+          event.target instanceof Node && stage.contains(event.target)
+        if (!term.hasMouseTracking() || (!inside && pressed === undefined))
+          return
+        if (inside) event.stopPropagation()
+        send(MOTION, pressed ?? 0, event)
+      },
+      capture,
+    )
+    window.addEventListener(
+      "mouseup",
+      (event) => {
+        if (pressed === undefined) return
+        send(RELEASE, pressed, event)
+        pressed = undefined
+      },
+      capture,
+    )
+    stage.addEventListener(
+      "wheel",
+      (event) => {
+        if (!term.hasMouseTracking()) return
+        event.preventDefault()
+        event.stopPropagation()
+        send(PRESS, event.deltaY < 0 ? WHEEL_UP : WHEEL_DOWN, event)
+      },
+      { capture: true, passive: false },
+    )
+    stage.addEventListener("contextmenu", (event) => {
+      if (term.hasMouseTracking()) event.preventDefault()
+    })
+  }
+
+  function loadScript(src: string) {
+    return new Promise<void>((resolve, reject) => {
+      const script = Object.assign(document.createElement("script"), { src })
+      script.onload = () => resolve()
+      script.onerror = () => reject(new Error(`failed to load ${src}`))
+      document.head.append(script)
+    })
+  }
+
+  async function compile(url: string) {
+    try {
+      return await WebAssembly.compileStreaming(fetch(url))
+    } catch {
+      // Hosts that don't serve application/wasm can't stream-compile.
+      const bytes = await (await fetch(url)).arrayBuffer()
+      return WebAssembly.compile(bytes)
+    }
+  }
+
+  async function start(host: HTMLElement) {
+    const { wasm = "", cols, rows } = host.dataset
+    const stage = host.querySelector<HTMLElement>("terminal-stage")
+    const status = host.querySelector<HTMLElement>("[data-status]")
+    const restart = host.querySelector<HTMLButtonElement>(
+      '[data-action="restart"]',
+    )
+    if (!stage || !status || !restart) return
+
+    const wasmURL = new URL(wasm, location.href)
+    const [{ init, Terminal }, module] = await Promise.all([
+      import("ghostty-web"),
+      compile(wasmURL.href),
+      loadScript(new URL("wasm_exec.js", wasmURL).href),
+    ])
+    await init()
+
+    const term = new Terminal({
+      cols: Number(cols),
+      rows: Number(rows),
+      fontSize: 15,
+      fontFamily: getComputedStyle(host).getPropertyValue("--font-mono"),
+      theme: FRAPPE,
+      cursorBlink: false,
+    })
+    stage.replaceChildren()
+    term.open(stage)
+    term.onData((data) => globalThis.niimtui?.input?.(data))
+    stage.addEventListener("click", () => term.focus())
+
+    // Size the grid to the stage like a native terminal window, but never
+    // below the app's minimum; under that, CSS scales the canvas down.
+    const canvas = stage.querySelector("canvas")
+    if (canvas) {
+      const fit = () => {
+        const cellWidth = Number.parseFloat(canvas.style.width) / term.cols
+        const cellHeight = Number.parseFloat(canvas.style.height) / term.rows
+        const nextCols = Math.max(
+          Number(cols),
+          Math.floor(stage.clientWidth / cellWidth),
+        )
+        const nextRows = Math.max(
+          Number(rows),
+          Math.floor(stage.clientHeight / cellHeight),
+        )
+        if (nextCols !== term.cols || nextRows !== term.rows) {
+          term.resize(nextCols, nextRows)
+          globalThis.niimtui?.resize?.(nextCols, nextRows)
+        }
+        stage.style.setProperty("--aspect", `${canvas.width / canvas.height}`)
+      }
+      fit()
+      new ResizeObserver(fit).observe(stage)
+      forwardMouse(stage, canvas, term)
+    }
+
+    const hint = status.innerHTML
+    const run = async () => {
+      restart.hidden = true
+      status.innerHTML = hint
+      globalThis.niimtui = {
+        cols: term.cols,
+        rows: term.rows,
+        onOutput: (bytes) => term.write(bytes),
+        onExit: (err) => {
+          // The Go runtime is gone; its callbacks would throw if called.
+          Object.assign(globalThis.niimtui, {
+            input: undefined,
+            resize: undefined,
+            mouse: undefined,
+          })
+          restart.hidden = false
+          status.textContent = err ? `exited: ${err}` : "niimtui exited"
+        },
+      }
+      const go = new globalThis.Go()
+      const instance = await WebAssembly.instantiate(module, go.importObject)
+      void go.run(instance)
+      term.focus()
+    }
+
+    restart.addEventListener("click", () => {
+      term.reset()
+      void run()
+    })
+    await run()
+  }
+
+  for (const host of document.querySelectorAll<HTMLElement>("live-terminal")) {
+    start(host).catch((err) => {
+      const loading = host.querySelector("[data-loading]")
+      if (loading) loading.textContent = `failed to start: ${err.message}`
+    })
+  }
+</script>
+
+<style>
+  live-terminal {
+    display: flex;
+    flex-direction: column;
+    min-block-size: 0;
+    background-color: #303446;
+
+    terminal-stage {
+      display: grid;
+      flex: 1;
+      place-items: center;
+      min-block-size: 0;
+      container-type: size;
+
+      p {
+        color: var(--muted-foreground);
+      }
+
+      /* Largest canvas that fits the stage while keeping the grid's shape. */
+      :global(canvas) {
+        inline-size: min(100cqi, 100cqb * var(--aspect, 3.3)) !important;
+        block-size: auto !important;
+      }
+    }
+
+    terminal-bar {
+      display: flex;
+      flex-wrap: wrap;
+      align-items: center;
+      justify-content: space-between;
+      gap: var(--space-2xs);
+      padding: var(--space-3xs) var(--space-2xs);
+      font-size: var(--step--1);
+      color: var(--muted-foreground);
+      border-block-start: 1px solid var(--border);
+
+      button {
+        color: var(--foreground);
+        cursor: pointer;
+
+        &:hover,
+        &:focus-visible {
+          color: var(--t-accent);
+        }
+      }
+    }
+  }
+</style>

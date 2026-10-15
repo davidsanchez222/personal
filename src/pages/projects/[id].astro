@@ -1,7 +1,6 @@
 ---
 import ExternalIcon from "@/assets/icons/external.svg"
 import MetaPage from "@/components/MetaPage.astro"
-import TerminalPreview from "@/components/TerminalPreview.astro"
 import Layout from "@/layouts/Layout.astro"
 import { hasProjectPage } from "@/lib/content"
 import { formatDate } from "@/lib/utils"
@@ -17,7 +16,7 @@ export async function getStaticPaths() {
 type Props = { project: CollectionEntry<"projects"> }
 
 const { project } = Astro.props
-const { name, description, link, tags, startDate, endDate, preview } =
+const { name, description, link, tags, startDate, endDate, video, demo } =
   project.data
 const { Content } = await render(project)
 ---
@@ -57,14 +56,66 @@ const { Content } = await render(project)
           </project-tags>
         )}
     </header>
-    {preview && <TerminalPreview name={name} preview={preview} />}
+    {video && (
+        <video src={video} autoplay muted loop playsinline preload="metadata" />
+      )}
     <prose-content>
       <Content />
     </prose-content>
+    {demo && (
+        <demo-launch>
+          <a href={`/projects/${project.id}/run`}>▶ run {name} in your browser</a>
+          <small>
+            opens full-window · ~2.5 MB download · printing disabled
+          </small>
+        </demo-launch>
+      )}
   </article>
 </Layout>
 
+<script>
+  // Autoplay is a decorative loop; hand control back under reduced motion.
+  if (matchMedia("(prefers-reduced-motion: reduce)").matches) {
+    for (const video of document.querySelectorAll("article video")) {
+      video.pause()
+      video.controls = true
+    }
+  }
+</script>
+
 <style>
+  video {
+    display: block;
+    inline-size: 100%;
+    margin-block: var(--space-m);
+    border-radius: var(--radius-md);
+  }
+
+  demo-launch {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: var(--space-2xs) var(--space-s);
+    margin-block: var(--space-m);
+
+    a {
+      padding: var(--space-2xs) var(--space-s);
+      color: var(--primary-foreground);
+      text-decoration: none;
+      background-color: var(--primary);
+      border-radius: var(--radius-full);
+
+      &:hover,
+      &:focus-visible {
+        background-color: var(--t-accent);
+      }
+    }
+
+    small {
+      color: var(--muted-foreground);
+    }
+  }
+
   header {
     display: flex;
     flex-direction: column;

@@ -8,7 +8,7 @@ import type { CollectionEntry } from "astro:content"
 type Props = { project: CollectionEntry<"projects"> }
 
 const { project } = Astro.props
-const { name, description, link, tags, image, startDate, endDate, preview } =
+const { name, description, link, tags, image, startDate, endDate, demo } =
   project.data
 const page = hasProjectPage(project) ? `/projects/${project.id}` : undefined
 const external = page ? {} : { target: "_blank", rel: "noopener noreferrer" }
@@ -47,7 +47,7 @@ const external = page ? {} : { target: "_blank", rel: "noopener noreferrer" }
         <ExternalIcon aria-hidden="true" />
         {new URL(link).hostname}
       </project-link>
-      {preview && <project-demo>▶ demo</project-demo>}
+      {demo && <project-demo>▶ live demo</project-demo>}
     </entry-meta>
     <p>{description}</p>
     {tags && tags.length > 0 && (

@@ -21,7 +21,8 @@ export default defineConfig({
         !/\/blog\/[^/]+\/[^/]+\/?$/.test(page) &&
         !/\/authors\/[^/]+\/?$/.test(page) &&
         !page.includes("/tags/") &&
-        !/\/card\/?$/.test(page),
+        !/\/card\/?$/.test(page) &&
+        !/\/projects\/[^/]+\/run\/?$/.test(page),
     }),
   ],
   markdown: {
